@@ -1,7 +1,7 @@
-# Track the monthly progress of the Thesis
+# Monthly Progress
 
-<iframe src='https://app.mural.co/embed/696f76d9-13b8-4f61-afb6-99bf97d94722' width='100%' height='480px' style='min-width: 640px; min-height: 480px; background-color: #f4f4f4; border: 1px solid #efefef' sandbox='allow-same-origin allow-scripts allow-modals allow-popups allow-popups-to-escape-sandbox'/>
+View my [Mural](https://app.mural.co/t/agentteam7375/m/agentteam7375/1775901455730/b54a482d1c0632f4c33245a59198c0430f2a2efd?sender=ua3ee4b7db160751d18014923) to keep track of the monthly progress of the Thesis.
 
 # Architectural Planning
 
-<iframe src='https://app.mural.co/embed/5f5a3c0d-3517-4f23-a559-763a49363083' width='100%' height='480px' style='min-width: 640px; min-height: 480px; background-color: #f4f4f4; border: 1px solid #efefef' sandbox='allow-same-origin allow-scripts allow-modals allow-popups allow-popups-to-escape-sandbox'/>
+View my [Mural](https://app.mural.co/t/agentteam7375/m/agentteam7375/1775902497569/a98d6fc091a7a1ccc5ec2f74b0d88c169e52587c?sender=ua3ee4b7db160751d18014923) to keep track of the Architectural Planning of the Multi-LLM Agent System.
