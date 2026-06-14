@@ -4,23 +4,55 @@ Graphstate: Central state for the entire agent pipeline
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Annotated, Any, Mapping
 
-from pydantic import BaseModel, Field
-
-
-class TraceEvent(BaseModel):
-    step: str
-    agent: Optional[str] = None
-    action: Optional[str] = None
-
-    input_preview: Optional[str] = None
-    output_preview: Optional[str] = None
-
-    metadata: dict[str, Any] = Field(default_factory=dict)
+from langchain.agents import AgentState
+from langchain.chat_models import BaseChatModel
+from langgraph.managed.is_last_step import RemainingSteps
 
 
-class GraphState(BaseModel):
+def merge_dict(existing: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
+    """
+    Merges the existing dictionary with a new dictionary.
+
+    This function logs the state merge and ensures that the new values
+    are appended to the existing state without overwriting other entries.
+    Args:
+        existing (Dict[str, Any]): The current dictionary state.
+        new (Dict[str, Any]): The new dictionary state to merge.
+    Returns:
+        Dict[str, Any]: The merged dictionary state.
+    """
+    merged = dict(existing) if existing else {}
+    merged.update(new or {})
+    return merged
+
+
+def replace_dict(existing: dict[str, Any], new: Any) -> Any:
+    """
+    Replaces the existing dictionary with a new dictionary.
+
+    This function logs the state update and ensures that the old state is replaced
+    with the new one.
+
+    Args:
+        existing (Dict[str, Any]): The current dictionary state.
+        new (Dict[str, Any]): The new dictionary state to replace the existing one.
+
+    Returns:
+        Dict[str, Any]: The updated dictionary state.
+
+    """
+    # If new is not a mapping, just replace existing value outright
+    if not isinstance(new, Mapping):
+        return new
+    # In-place replace: clear existing mapping and update with new entries
+    existing.clear()
+    existing.update(new)
+    return existing
+
+
+class GraphState(AgentState):
     """
     Central state container for the entire agent pipeline.
 
@@ -31,65 +63,22 @@ class GraphState(BaseModel):
     - debuggable (trace log)
     """
 
+    remaining_steps: RemainingSteps
     # Input / Output
-    raw_input: Any = None
-    final_output: Any = None
-
+    raww_input: Annotated[Any, replace_dict]
+    final_output: Any
     # Pipeline stages
-    retrieved_data: Any = None
-    validated_data: Any = None
-    repaired_data: Any = None
+    retrieved_data: Annotated[Any, merge_dict]
+    validated_data: Annotated[Any, replace_dict]
+    repaired_data: Annotated[Any, merge_dict]
 
     # Error handling
-    errors: list[str] = Field(default_factory=list)
+    errors: Annotated[list[str], merge_dict]
 
     # Flexible artifact store
     # (LLM/tool outputs, agent memory, etc.)
-    artifacts: dict[str, Any] = Field(default_factory=dict)
-
-    # Execution trace
-    trace: list[TraceEvent] = Field(default_factory=list)
+    artifacts: dict[str, Any]
 
     # Metadata (run config, model info, etc.)
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-    # Helper methods
-    def add_trace(
-        self,
-        step: str,
-        agent: Optional[str] = None,
-        action: Optional[str] = None,
-        input_preview: Optional[str] = None,
-        output_preview: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
-    ) -> None:
-        self.trace.append(
-            TraceEvent(
-                step=step,
-                agent=agent,
-                action=action,
-                input_preview=input_preview,
-                output_preview=output_preview,
-                metadata=metadata or {},
-            )
-        )
-
-    def add_error(self, error: str) -> None:
-        self.errors.append(error)
-
-    def set_artifact(self, key: str, value: Any) -> None:
-        self.artifacts[key] = value
-
-    def get_artifact(self, key: str, default: Any = None) -> Any:
-        return self.artifacts.get(key, default)
-
-    def update_metadata(self, key: str, value: Any) -> None:
-        self.metadata[key] = value
-
-    # Serialization
-    def to_dict(self) -> dict[str, Any]:
-        return self.model_dump()
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "GraphState":
-        return cls.model_validate(data)
+    metadata: dict[str, Any]
+    llm_model: BaseChatModel
