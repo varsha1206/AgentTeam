@@ -31,7 +31,7 @@ def create_workspace() -> Path:
     required_dirs = [
         "input",
         "generated",
-        "outputs",
+        "output",
         "logs",
         "temp",
     ]
@@ -116,7 +116,7 @@ def main():
                 "content": (
                     "Retrieve the dataset from the input folder. "
                     "Read all available CSV files, summarise their contents, "
-                    "and write the raw data to the outputs folder."
+                    "and write the raw data to the output folder."
                 ),
             }
         ],

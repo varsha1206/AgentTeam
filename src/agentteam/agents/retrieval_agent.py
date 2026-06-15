@@ -10,6 +10,7 @@ from pathlib import Path
 
 import hydra
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import SystemMessage
 from omegaconf import DictConfig
 
 from agentteam.tools.retrieval_agent.retrieval_tools import RetrievalTools
@@ -37,6 +38,7 @@ class RetrievalAgent:
         self.tools = RetrievalTools(
             input_dir=workspace / "input",
             output_dir=workspace / "output",
+            generated_dir=workspace / "generated",
         )
         self.app = self._build_app()
 
@@ -54,6 +56,18 @@ class RetrievalAgent:
             logger.info("Retrieval agent config loaded successfully")
             return cfg.agents.retrieval
 
+    def _build_prompt(self) -> SystemMessage:
+        prompt = self.cfg.system_prompt.format(
+            input_dir=self.tools.input_dir,
+            output_dir=self.tools.output_dir,
+            generated_dir=self.tools.generated_dir,
+        )
+        return SystemMessage(
+            content=[
+                {"type": "text", "text": prompt, "cache_control": {"type": "ephemeral"}}
+            ]
+        )
+
     # -----------------------------
     # App
     # -----------------------------
@@ -62,7 +76,7 @@ class RetrievalAgent:
         return create_react_agent(
             model=self.llm_model,
             tools=self.tools.as_tools(),
-            prompt=self.cfg.system_prompt,
+            prompt=self._build_prompt(),
             name="retrieval_agent",
         )
 

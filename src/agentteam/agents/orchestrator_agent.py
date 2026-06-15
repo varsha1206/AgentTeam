@@ -10,6 +10,7 @@ from pathlib import Path
 import hydra
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph_supervisor import create_supervisor
 from omegaconf import DictConfig
@@ -63,6 +64,9 @@ class Orchestrator:
             model_name="claude-haiku-4-5-20251001",
             timeout=10,
             stop=["end of response"],
+            model_kwargs={
+                "extra_headers": {"anthropic-beta": "prompt-caching-2024-07-31"}
+            },
         )
 
     # -----------------------------
@@ -73,6 +77,18 @@ class Orchestrator:
         return [
             retrieval_agent_app(self.llm_model, self.workspace),
         ]
+
+    def _build_prompts(self) -> SystemMessage:
+        """Build system prompt for the supervisor agent."""
+        return SystemMessage(
+            content=[
+                {
+                    "type": "text",
+                    "text": self.cfg.system_prompt,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ]
+        )
 
     # -----------------------------
     # App
@@ -87,7 +103,7 @@ class Orchestrator:
                 agents,  # type: ignore
                 model=self.llm_model,
                 state_schema=GraphState,
-                prompt=self.cfg.system_prompt,
+                prompt=self._build_prompts(),
                 add_handoff_back_messages=True,
             )
 
