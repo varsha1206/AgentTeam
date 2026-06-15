@@ -5,9 +5,7 @@ main.py - Test entrypoint for the AgentTeam pipeline
 import logging
 from pathlib import Path
 
-from langchain_core.runnables import RunnableConfig
-
-from agentteam.agents.orchestrator_agent import build_app
+from agentteam.agents.orchestrator_agent import Orchestrator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,17 +42,15 @@ def create_workspace() -> Path:
     return workspace
 
 
-def stream_pipeline(app, initial_state: dict, config: RunnableConfig) -> dict:
+def stream_pipeline(stream) -> dict:
     """
-    Stream pipeline execution, logging each agent message as it arrives.
+    Consume a pipeline stream, logging each agent message as it arrives.
     Returns the final state.
     """
-
     logger.info("===== STREAMING PIPELINE =====\n")
-
     final_chunk = {}
 
-    for chunk in app.stream(initial_state, config=config, stream_mode="values"):
+    for chunk in stream:
         final_chunk = chunk
         messages = chunk.get("messages", [])
         if not messages:
@@ -68,7 +64,6 @@ def stream_pipeline(app, initial_state: dict, config: RunnableConfig) -> dict:
 
         if isinstance(content, str) and content.strip():
             logger.info(f"[{label}]\n{content}\n")
-
         elif isinstance(content, list):
             for block in content:
                 if not isinstance(block, dict):
@@ -101,23 +96,18 @@ def log_final_state(result: dict) -> None:
 
 
 def main():
-    """
-    Run the AgentTeam pipeline.
-    """
-
-    # -----------------------------
-    # Workspace
-    # -----------------------------
     workspace_path = get_project_root() / "workspace"
-    logger.info(f"Workspace: {workspace_path}")
+
+    if not workspace_path.exists():
+        raise FileNotFoundError(f"Workspace not found at {workspace_path}")
 
     # -----------------------------
-    # Build app
+    # Build orchestrator
     # -----------------------------
-    app = build_app(workspace=workspace_path)
+    orchestrator = Orchestrator(workspace=workspace_path)
 
     # -----------------------------
-    # Initial graph state
+    # Initial state
     # -----------------------------
     initial_state = {
         "messages": [
@@ -145,16 +135,12 @@ def main():
         },
     }
 
-    config: RunnableConfig = {"configurable": {"thread_id": "test-thread-001"}}
-
     # -----------------------------
     # Run + stream
     # -----------------------------
-    result = stream_pipeline(app, initial_state, config)
-
-    # -----------------------------
-    # Final state
-    # -----------------------------
+    result = stream_pipeline(
+        orchestrator.stream(initial_state, thread_id="test-thread-001")
+    )
     log_final_state(result)
 
 
