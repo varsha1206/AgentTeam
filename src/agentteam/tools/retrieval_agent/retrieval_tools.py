@@ -88,8 +88,6 @@ class RetrievalTools:
         Returns all tools as LangChain-compatible @tool callables,
         bound to this instance's workspace directories.
         """
-        input_dir = self.input_dir
-        output_dir = self.output_dir
         _self = self
 
         @tool
