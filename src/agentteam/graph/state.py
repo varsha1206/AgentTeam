@@ -64,6 +64,10 @@ class GraphState(AgentState):
     """
 
     remaining_steps: RemainingSteps
+    # Workspace information
+    workspace_path: str
+    execution_plan: list[str]
+
     # Input / Output
     raww_input: Annotated[Any, replace_dict]
     final_output: Any
