@@ -1,0 +1,6 @@
+ id  name age  salary
+  1 Alice  30 50000.0
+  2   Bob NaN 60000.0
+  3   NaN  25     NaN
+  4 Diana abc 75000.0
+  5   Eve  28 80000.0

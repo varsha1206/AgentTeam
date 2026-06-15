@@ -9,7 +9,7 @@ from langchain_core.runnables import RunnableConfig
 
 from agentteam.agents.orchestrator_agent import build_app
 
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -44,6 +44,62 @@ def create_workspace() -> Path:
     return workspace
 
 
+def stream_pipeline(app, initial_state: dict, config: RunnableConfig) -> dict:
+    """
+    Stream pipeline execution, logging each agent message as it arrives.
+    Returns the final state.
+    """
+
+    logger.info("===== STREAMING PIPELINE =====\n")
+
+    final_chunk = {}
+
+    for chunk in app.stream(initial_state, config=config, stream_mode="values"):
+        final_chunk = chunk
+        messages = chunk.get("messages", [])
+        if not messages:
+            continue
+
+        msg = messages[-1]
+        role = getattr(msg, "type", "unknown")
+        content = getattr(msg, "content", "")
+        name = getattr(msg, "name", "")
+        label = f"{role}/{name}" if name else role
+
+        if isinstance(content, str) and content.strip():
+            logger.info(f"[{label}]\n{content}\n")
+
+        elif isinstance(content, list):
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") == "text" and block.get("text", "").strip():
+                    logger.info(f"[{label}]\n{block['text']}\n")
+                elif block.get("type") == "tool_use":
+                    logger.info(
+                        f"[tool_call/{block['name']}] input={block.get('input', {})}\n"
+                    )
+                elif block.get("type") == "tool_result":
+                    logger.info(f"[tool_result]\n{block.get('content', '')}\n")
+
+    return final_chunk
+
+
+def log_final_state(result: dict) -> None:
+    """
+    Log the final graph state after pipeline completion.
+    """
+
+    logger.info("===== FINAL STATE =====\n")
+
+    skip_keys = {"messages"}  # already logged during streaming
+
+    for key, value in result.items():
+        if key in skip_keys:
+            continue
+        logger.info(f"[{key}]\n{value}\n")
+
+
 def main():
     """
     Run the AgentTeam pipeline.
@@ -52,12 +108,13 @@ def main():
     # -----------------------------
     # Workspace
     # -----------------------------
-    workspace_path = create_workspace()
+    workspace_path = get_project_root() / "workspace"
+    logger.info(f"Workspace: {workspace_path}")
 
     # -----------------------------
     # Build app
     # -----------------------------
-    app = build_app()
+    app = build_app(workspace=workspace_path)
 
     # -----------------------------
     # Initial graph state
@@ -67,16 +124,13 @@ def main():
             {
                 "role": "user",
                 "content": (
-                    "Read the CSV file in the workspace input folder "
-                    "and store the first five rows in a new CSV."
+                    "Retrieve the dataset from the input folder. "
+                    "Read all available CSV files, summarise their contents, "
+                    "and write the raw data to the outputs folder."
                 ),
             }
         ],
-        "raw_input": (
-            "Read the CSV file in workspace/input "
-            "and save the first five rows into "
-            "workspace/outputs."
-        ),
+        "raw_input": str(workspace_path / "input" / "sample.csv"),
         "workspace_path": workspace_path,
         "execution_plan": [],
         "final_output": None,
@@ -93,18 +147,15 @@ def main():
 
     config: RunnableConfig = {"configurable": {"thread_id": "test-thread-001"}}
 
-    logger.info("===== INVOKING AGENT PIPELINE =====")
+    # -----------------------------
+    # Run + stream
+    # -----------------------------
+    result = stream_pipeline(app, initial_state, config)
 
-    result = app.invoke(
-        initial_state,
-        config=config,
-    )
-
-    logger.info("\n===== FINAL STATE =====")
-
-    for key, value in result.items():
-        logger.info(f"\n[{key}]")
-        logger.info(value)
+    # -----------------------------
+    # Final state
+    # -----------------------------
+    log_final_state(result)
 
 
 if __name__ == "__main__":

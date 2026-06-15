@@ -69,7 +69,7 @@ class GraphState(AgentState):
     execution_plan: list[str]
 
     # Input / Output
-    raww_input: Annotated[Any, replace_dict]
+    raw_input: Annotated[Any, replace_dict]
     final_output: Any
     # Pipeline stages
     retrieved_data: Annotated[Any, merge_dict]

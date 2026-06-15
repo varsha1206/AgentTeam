@@ -4,6 +4,8 @@ data pipeline
 """
 
 import logging
+import warnings
+from pathlib import Path
 
 import hydra
 from langchain_anthropic import ChatAnthropic
@@ -14,18 +16,19 @@ from langgraph_supervisor import create_supervisor
 from agentteam.agents.retrieval_agent import retrieval_agent_app
 from agentteam.graph.state import GraphState
 
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def build_app(llm_model: BaseChatModel | None = None):
+def build_app(llm_model: BaseChatModel | None = None, workspace: Path | None = None):
     """
     Builds LangGraph supervisor system
     """
+
     # Load orchestrator config
     with hydra.initialize(
         version_base=None,
-        config_path="../../configs",
+        config_path="../../../configs",
     ):
         logger.info("Loading orchestrator config...")
         cfg = hydra.compose(
@@ -42,15 +45,17 @@ def build_app(llm_model: BaseChatModel | None = None):
             stop=["end of response"],
         )
     # Sub-agents list
-    agents = [retrieval_agent_app(llm_model)]
+    agents = [retrieval_agent_app(llm_model, workspace)]
 
-    workflow = create_supervisor(
-        agents,  # type: ignore
-        model=llm_model,
-        state_schema=GraphState,
-        prompt=orchestrator_cfg.system_prompt,
-        add_handoff_back_messages=True,
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*remaining_steps.*")
+        workflow = create_supervisor(
+            agents,  # type: ignore
+            model=llm_model,
+            state_schema=GraphState,
+            prompt=orchestrator_cfg.system_prompt,
+            add_handoff_back_messages=True,
+        )
 
     app = workflow.compile(
         checkpointer=MemorySaver(),
