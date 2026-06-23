@@ -3,76 +3,90 @@ import json
 from pathlib import Path
 
 try:
-    csv_path = Path(r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\sample.csv')
-    df = pd.read_csv(csv_path)
+    output_dir = Path(r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output')
     
     errors = []
+    total_rows = 0
+    total_cols = 0
     
-    expected_columns = ['id', 'name', 'age', 'salary']
-    actual_columns = list(df.columns)
+    csv_files = sorted(list(output_dir.glob('*.csv')))
     
-    if actual_columns != expected_columns:
-        errors.append(f'Column mismatch. Expected: {expected_columns}, Got: {actual_columns}')
+    if not csv_files:
+        print(json.dumps({"status": "FAIL", "errors": ["No CSV files found in output directory"]}))
+        exit(1)
     
-    if len(df) == 0:
-        errors.append('Dataset is empty')
+    for csv_file in csv_files:
+        df = pd.read_csv(csv_file)
+        total_rows += len(df)
+        if total_cols == 0:
+            total_cols = len(df.columns)
+        
+        filename = csv_file.name
+        
+        if len(df) == 0:
+            errors.append(f"{filename}: Dataset is empty (0 rows)")
+            continue
+        
+        if len(df.columns) == 0:
+            errors.append(f"{filename}: Dataset has no columns")
+            continue
+        
+        expected_cols_sample = {
+            'sample.csv': ['id', 'name', 'age', 'salary'],
+            'sample2.csv': ['student_id', 'student_name', 'age', 'city']
+        }
+        
+        expected_cols = expected_cols_sample.get(filename, df.columns.tolist())
+        if list(df.columns) != expected_cols:
+            errors.append(f"{filename}: Unexpected columns. Expected {expected_cols}, got {list(df.columns)}")
+        
+        if filename == 'sample.csv':
+            if df['id'].isnull().sum() > 0:
+                errors.append(f"{filename}: Column 'id' (primary key) has null values")
+            
+            if df['name'].isnull().sum() > 0:
+                errors.append(f"{filename}: Column 'name' has null values: {df['name'].isnull().sum()} rows")
+            
+            if df['age'].isnull().sum() > 0:
+                errors.append(f"{filename}: Column 'age' has null values: {df['age'].isnull().sum()} rows")
+            
+            if df['salary'].isnull().sum() > 0:
+                errors.append(f"{filename}: Column 'salary' has null values: {df['salary'].isnull().sum()} rows")
+            
+            non_numeric_age = df[~df['age'].isnull()][df[~df['age'].isnull()]['age'].astype(str).str.contains(r'^[0-9]+$', na=False) == False]
+            if len(non_numeric_age) > 0:
+                errors.append(f"{filename}: Column 'age' contains non-numeric values: {non_numeric_age['age'].tolist()}")
+            
+            if not pd.api.types.is_numeric_dtype(df['salary']):
+                non_numeric_sal = df[~df['salary'].isnull()][~pd.to_numeric(df[~df['salary'].isnull()]['salary'], errors='coerce').notna()]
+                if len(non_numeric_sal) > 0:
+                    errors.append(f"{filename}: Column 'salary' contains non-numeric values")
+        
+        elif filename == 'sample2.csv':
+            if df['student_id'].isnull().sum() > 0:
+                errors.append(f"{filename}: Column 'student_id' (primary key) has null values")
+            
+            if df['student_name'].isnull().sum() > 0:
+                errors.append(f"{filename}: Column 'student_name' has null values: {df['student_name'].isnull().sum()} rows")
+            
+            if df['age'].isnull().sum() > 0:
+                errors.append(f"{filename}: Column 'age' has null values: {df['age'].isnull().sum()} rows")
+            
+            if df['city'].isnull().sum() > 0:
+                errors.append(f"{filename}: Column 'city' has null values: {df['city'].isnull().sum()} rows")
+            
+            non_numeric_age = df[~df['age'].isnull()][df[~df['age'].isnull()]['age'].astype(str).str.contains(r'^[0-9]+$', na=False) == False]
+            if len(non_numeric_age) > 0:
+                errors.append(f"{filename}: Column 'age' contains non-numeric values: {non_numeric_age['age'].tolist()}")
+        
+        duplicates = df.duplicated().sum()
+        if duplicates > 0:
+            errors.append(f"{filename}: Dataset has {duplicates} duplicate rows")
     
-    if 'id' in df.columns:
-        if df['id'].isnull().any():
-            null_ids = df[df['id'].isnull()].index.tolist()
-            errors.append(f'Column "id" contains null values at rows: {null_ids}')
-        try:
-            pd.to_numeric(df['id'])
-        except:
-            errors.append('Column "id" contains non-numeric values')
-    
-    if 'name' in df.columns:
-        if df['name'].isnull().any():
-            null_names = df[df['name'].isnull()].index.tolist()
-            errors.append(f'Column "name" contains null values at rows: {null_names}')
-    
-    if 'age' in df.columns:
-        if df['age'].isnull().any():
-            null_ages = df[df['age'].isnull()].index.tolist()
-            errors.append(f'Column "age" contains null values at rows: {null_ages}')
-        try:
-            pd.to_numeric(df['age'])
-        except:
-            non_numeric_ages = df[pd.to_numeric(df['age'], errors='coerce').isnull() & df['age'].notna()].index.tolist()
-            errors.append(f'Column "age" contains non-numeric values at rows: {non_numeric_ages}')
-    
-    if 'salary' in df.columns:
-        if df['salary'].isnull().any():
-            null_salaries = df[df['salary'].isnull()].index.tolist()
-            errors.append(f'Column "salary" contains null values at rows: {null_salaries}')
-        try:
-            pd.to_numeric(df['salary'])
-        except:
-            errors.append('Column "salary" contains non-numeric values')
-    
-    duplicate_rows = df.duplicated().sum()
-    if duplicate_rows > 0:
-        errors.append(f'Dataset contains {duplicate_rows} duplicate row(s)')
-    
-    row_count = len(df)
-    column_count = len(df.columns)
-    
-    status = 'PASS' if len(errors) == 0 else 'FAIL'
-    
-    result = {
-        'status': status,
-        'errors': errors,
-        'row_count': row_count,
-        'column_count': column_count
-    }
-    
-    print(json.dumps(result))
-    
+    if errors:
+        print(json.dumps({"status": "FAIL", "errors": errors}))
+    else:
+        print(json.dumps({"status": "PASS", "errors": []}))
+
 except Exception as e:
-    error_result = {
-        'status': 'FAIL',
-        'errors': [f'Validation script error: {str(e)}'],
-        'row_count': 0,
-        'column_count': 0
-    }
-    print(json.dumps(error_result))
+    print(json.dumps({"status": "FAIL", "errors": [f"Validation script error: {str(e)}"]}))

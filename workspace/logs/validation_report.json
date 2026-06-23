@@ -1,12 +1,16 @@
 {
   "status": "FAIL",
-  "row_count": 5,
+  "row_count": 10,
   "column_count": 4,
   "errors": [
-    "Column \"name\" contains null values at rows: [2]",
-    "Column \"age\" contains null values at rows: [1]",
-    "Column \"age\" contains non-numeric values at rows: [3]",
-    "Column \"salary\" contains null values at rows: [2]"
+    "sample.csv: Column 'name' has null values: 1 rows",
+    "sample.csv: Column 'age' has null values: 1 rows",
+    "sample.csv: Column 'salary' has null values: 1 rows",
+    "sample.csv: Column 'age' contains non-numeric values: ['abc']",
+    "sample2.csv: Column 'student_name' has null values: 1 rows",
+    "sample2.csv: Column 'age' has null values: 1 rows",
+    "sample2.csv: Column 'city' has null values: 1 rows",
+    "sample2.csv: Column 'age' contains non-numeric values: ['abc']"
   ],
-  "summary": "Dataset validation FAILED due to 4 data quality issues: null values in name, age, and salary columns, plus non-numeric value in age column."
+  "summary": "Validation FAILED: Both datasets contain missing values in critical columns and contain non-numeric values in the age column."
 }
