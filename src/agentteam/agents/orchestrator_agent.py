@@ -5,11 +5,13 @@ Uses a custom StateGraph for full control over state transitions.
 
 import logging
 from pathlib import Path
+from typing import cast
 
 import hydra
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from omegaconf import DictConfig
@@ -77,7 +79,20 @@ class Orchestrator:
             (m for m in reversed(messages) if isinstance(m, AIMessage)),
             None,
         )
-        return last_ai.content if last_ai else ""
+        if last_ai is None:
+            return ""
+        content = last_ai.content
+        if isinstance(content, str):
+            return content
+        return "\n".join(
+            item if isinstance(item, str) else str(item) for item in content
+        )
+
+    def _current_turn_messages(self, state: GraphState, result: dict) -> list:
+        """Return only the messages added by the current agent invocation."""
+        messages = result.get("messages", [])
+        previous_count = len(state.get("messages", []))
+        return messages[previous_count:] if previous_count < len(messages) else messages
 
     def _extract_path_from_outputs(
         self, tool_outputs: list[str], *keywords: str
@@ -99,19 +114,22 @@ class Orchestrator:
         summary = self._extract_last_ai_message(messages)
         try:
             extraction_llm = self._build_structured_llm(RetrievalResult)
-            result: RetrievalResult = extraction_llm.invoke(
-                [
-                    HumanMessage(
-                        content=(
-                            f"Extract the retrieval result from the following agent output.\n\n"
-                            f"Agent summary:\n{summary}\n\n"
-                            f"Tool outputs:\n{chr(10).join(tool_outputs)}\n\n"
-                            f"Extract: status, summary, script_path, output_path, errors."
-                            f'errors must be a JSON array of strings, e.g. [] or ["error1"].\n'
-                            f"Never return errors as a plain string."
+            result = cast(
+                RetrievalResult,
+                extraction_llm.invoke(
+                    [
+                        HumanMessage(
+                            content=(
+                                f"Extract the retrieval result from the following agent output.\n\n"
+                                f"Agent summary:\n{summary}\n\n"
+                                f"Tool outputs:\n{chr(10).join(tool_outputs)}\n\n"
+                                f"Extract: status, summary, script_path, output_path, errors."
+                                f'errors must be a JSON array of strings, e.g. [] or ["error1"].\n'
+                                f"Never return errors as a plain string."
+                            )
                         )
-                    )
-                ]
+                    ],
+                ),
             )
             return result
         except Exception as e:
@@ -122,7 +140,9 @@ class Orchestrator:
         self, summary: str, tool_outputs: list[str]
     ) -> RetrievalResult:
         """Rule-based fallback extraction if LLM parsing fails."""
-        script_path = self._extract_path_from_outputs(tool_outputs, "generated", ".py")
+        script_path = self._extract_path_from_outputs(
+            tool_outputs, "generated", "retrieval", ".py"
+        )
         output_path = self._extract_path_from_outputs(tool_outputs, "output", ".csv")
         status = "complete" if output_path else "failed"
         return RetrievalResult(
@@ -139,18 +159,22 @@ class Orchestrator:
         summary = self._extract_last_ai_message(messages)
         try:
             extraction_llm = self._build_structured_llm(ValidatorResult)
-            result: ValidatorResult = extraction_llm.invoke(
-                [
-                    HumanMessage(
-                        content=(
-                            f"Extract the validation result from the following agent output.\n\n"
-                            f"Agent summary:\n{summary}\n\n"
-                            f"Tool outputs:\n{chr(10).join(tool_outputs)}\n\n"
-                            f"Extract: status, validation_outcome, script_path, report_path, errors, summary."
+            result = cast(
+                ValidatorResult,
+                extraction_llm.invoke(
+                    [
+                        HumanMessage(
+                            content=(
+                                f"Extract the validation result from the following agent output.\n\n"
+                                f"Agent summary:\n{summary}\n\n"
+                                f"Tool outputs:\n{chr(10).join(tool_outputs)}\n\n"
+                                f"Extract: status, validation_outcome, script_path, report_path, errors, summary."
+                            )
                         )
-                    )
-                ]
+                    ],
+                ),
             )
+            logger.info(f"Structured validator result entire: {result}")
             return result
         except Exception as e:
             logger.warning(
@@ -162,8 +186,12 @@ class Orchestrator:
         self, summary: str, tool_outputs: list[str]
     ) -> ValidatorResult:
         """Rule-based fallback extraction if LLM parsing fails."""
-        script_path = self._extract_path_from_outputs(tool_outputs, "generated", ".py")
-        report_path = self._extract_path_from_outputs(tool_outputs, "logs", ".json")
+        script_path = self._extract_path_from_outputs(
+            tool_outputs, "generated", "validation", ".py"
+        )
+        report_path = self._extract_path_from_outputs(
+            tool_outputs, "logs", "validation_report.json"
+        )
         validation_outcome = (
             "FAIL" if any("ERROR" in o or "FAIL" in o for o in tool_outputs) else "PASS"
         )
@@ -182,16 +210,19 @@ class Orchestrator:
         """Uses structured LLM output to decide the next node."""
         try:
             routing_llm = self._build_structured_llm(RoutingDecision)
-            decision: RoutingDecision = routing_llm.invoke(
-                [
-                    HumanMessage(
-                        content=self.cfg.routing_prompt.format(
-                            status=result.status,
-                            summary=result.summary,
-                            errors=result.errors,
+            decision = cast(
+                RoutingDecision,
+                routing_llm.invoke(
+                    [
+                        HumanMessage(
+                            content=self.cfg.routing_prompt.format(
+                                status=result.status,
+                                summary=result.summary,
+                                errors=result.errors,
+                            )
                         )
-                    )
-                ]
+                    ],
+                ),
             )
             logger.info(f"Routing decision: {decision.next_node} — {decision.reason}")
             return decision
@@ -220,7 +251,7 @@ class Orchestrator:
         def retrieval_node(state: GraphState) -> dict:
             logger.info("Running retrieval agent...")
             result = agent.invoke({"messages": state["messages"]})
-            messages = result.get("messages", [])
+            messages = self._current_turn_messages(state, result)
             retrieval_result = self._parse_retrieval_result(messages)
             logger.info(f"Retrieval status: {retrieval_result.status}")
             return {
@@ -237,8 +268,14 @@ class Orchestrator:
 
         def validator_node(state: GraphState) -> dict:
             logger.info("Running validation agent...")
-            result = agent.invoke({"messages": state["messages"]})
-            messages = result.get("messages", [])
+            retrieved = state.get("retrieved_data", {})
+            result = agent.invoke(
+                {
+                    "messages": state["messages"]
+                    + [HumanMessage(content=f"Retrieval context: {retrieved}")]
+                }
+            )
+            messages = self._current_turn_messages(state, result)
             validator_result = self._parse_validator_result(messages)
             logger.info(
                 f"Validator status: {validator_result.status} — outcome: {validator_result.validation_outcome}"
@@ -306,10 +343,10 @@ class Orchestrator:
         )
         return graph.compile(checkpointer=MemorySaver(), name="AgentTeam_Main")
 
-    def invoke(self, state: dict, thread_id: str = "default") -> dict:
-        config = {"configurable": {"thread_id": thread_id}}
+    def invoke(self, state: GraphState, thread_id: str = "default") -> dict:
+        config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
         return self.app.invoke(state, config=config)
 
-    def stream(self, state: dict, thread_id: str = "default"):
-        config = {"configurable": {"thread_id": thread_id}}
+    def stream(self, state: GraphState, thread_id: str = "default"):
+        config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
         return self.app.stream(state, config=config, stream_mode="values")

@@ -76,6 +76,17 @@ class ValidatorTools:
         logger.info(f"Validation script written: {script_path} — {script.description}")
         return str(script_path)
 
+    def write_validated_data(self, source_path: str) -> str:
+        """Copy validated CSV to workspace/output/validated_data.csv on PASS."""
+        src = Path(source_path)
+        if not src.exists():
+            return f"ERROR: Source file not found at {src}"
+        df = pd.read_csv(src)
+        out_path = self.output_dir / "validated_data.csv"
+        df.to_csv(out_path, index=False, encoding="utf-8")
+        logger.info(f"Validated data written: {out_path}")
+        return str(out_path)
+
     def execute_script(self, script_path: str) -> str:
         """Execute a validation script and return its output."""
         path = Path(script_path)
@@ -160,6 +171,16 @@ class ValidatorTools:
             return _self.execute_script(script_path)
 
         @tool
+        def write_validated_data(source_path: str) -> str:
+            """
+            Copy the validated CSV to workspace/output/validated_data.csv.
+            Only call this when validation status is PASS.
+            Args:
+                source_path: absolute path to the validated CSV file
+            """
+            return _self.write_validated_data(source_path)
+
+        @tool
         def write_validation_report(
             status: str,
             row_count: int,
@@ -192,4 +213,5 @@ class ValidatorTools:
             write_script,
             execute_script,
             write_validation_report,
+            write_validated_data,
         ]

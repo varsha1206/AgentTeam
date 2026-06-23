@@ -1,0 +1,12 @@
+{
+  "status": "FAIL",
+  "row_count": 5,
+  "column_count": 4,
+  "errors": [
+    "Column \"name\" contains null values at rows: [2]",
+    "Column \"age\" contains null values at rows: [1]",
+    "Column \"age\" contains non-numeric values at rows: [3]",
+    "Column \"salary\" contains null values at rows: [2]"
+  ],
+  "summary": "Dataset validation FAILED due to 4 data quality issues: null values in name, age, and salary columns, plus non-numeric value in age column."
+}

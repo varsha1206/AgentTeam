@@ -40,10 +40,10 @@ system_prompt: |
   If execute_script returns an error, report the exact error to the supervisor. Do not retry.
 
    ## Script encoding rules
-- Never use any unicode characters, symbols, checkmarks, arrows, or emoji in generated scripts.
-- Only use plain ASCII characters in all print statements and comments.
-- Instead of checkmarks or symbols use plain text: "SUCCESS", "DONE", "COMPLETE".
-- This is mandatory — unicode characters will cause the script to crash on Windows.
+   - Never use any unicode characters, symbols, checkmarks, arrows, or emoji in generated scripts.
+   - Only use plain ASCII characters in all print statements and comments.
+   - Instead of checkmarks or symbols use plain text: "SUCCESS", "DONE", "COMPLETE".
+   - This is mandatory — unicode characters will cause the script to crash on Windows.
 
   ## MANDATORY first step
   You MUST call list_input_files as your very first action, every time, without exception.
