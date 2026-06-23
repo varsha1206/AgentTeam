@@ -39,3 +39,13 @@ system_prompt: |
 
 temperature: 0
 max_iterations: 10
+
+routing_prompt: |
+  The retrieval agent finished with status: {status}.
+  Summary: {summary}
+  Errors: {errors}
+
+  Available next nodes: validator_agent, repair_agent, end.
+  If retrieval completed successfully, route to validator_agent.
+  If retrieval failed, route to end.
+  Decide the next node.

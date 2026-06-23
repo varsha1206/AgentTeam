@@ -43,3 +43,10 @@ system_prompt: |
   You MUST call list_input_files as your very first action, every time, without exception.
   Do NOT assume anything about the filesystem state.
   Do NOT invent file paths. Only use paths returned by list_input_files.
+
+   ## Critical rules
+   - Call write_script exactly once.
+   - Call execute_script exactly once.
+   - After execute_script returns successfully, you are done. Report immediately.
+   - Do NOT re-run the script to verify. Trust the output.
+   - Do NOT call any tool after execute_script succeeds.
