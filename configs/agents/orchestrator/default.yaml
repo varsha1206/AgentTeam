@@ -41,11 +41,14 @@ temperature: 0
 max_iterations: 10
 
 routing_prompt: |
-  The retrieval agent finished with status: {status}.
+  An agent finished with status: {status}.
   Summary: {summary}
   Errors: {errors}
 
-  Available next nodes: validator_agent, repair_agent, end.
-  If retrieval completed successfully, route to validator_agent.
-  If retrieval failed, route to end.
+  Available next nodes: validation_agent, repair_agent, end.
+  If status is complete and no errors, route to the next logical agent in the pipeline.
+  If retrieval completed, route to validation_agent.
+  If validation passed (no errors), route to end.
+  If validation failed (errors present), route to repair_agent.
+  If anything failed, route to end.
   Decide the next node.

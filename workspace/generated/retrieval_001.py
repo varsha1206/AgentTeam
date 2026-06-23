@@ -2,39 +2,44 @@ import pandas as pd
 from pathlib import Path
 
 try:
-    # Define paths
-    input_file = Path(r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\sample.csv")
-    output_dir = Path(r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output")
-    output_file = output_dir / "sample.csv"
+    input_dir = Path(r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input')
+    output_dir = Path(r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output')
     
-    # Read the CSV file
-    df = pd.read_csv(input_file)
+    csv_file = input_dir / 'sample.csv'
     
-    # Print summary information
-    print("=" * 60)
+    if not csv_file.exists():
+        print(f"ERROR: File not found - {csv_file}")
+        exit(1)
+    
+    df = pd.read_csv(csv_file)
+    
+    print("=" * 80)
     print("DATA RETRIEVAL SUMMARY")
-    print("=" * 60)
-    print(f"File: sample.csv")
-    print(f"Row Count: {len(df)}")
-    print(f"\nColumn Names: {list(df.columns)}")
-    print(f"Total Columns: {len(df.columns)}")
-    print("\nNull Counts per Column:")
-    null_counts = df.isnull().sum()
-    for col, null_count in null_counts.items():
-        print(f"  {col}: {null_count}")
-    print("\nData Types:")
-    for col, dtype in df.dtypes.items():
-        print(f"  {col}: {dtype}")
-    print("=" * 60)
+    print("=" * 80)
+    print(f"\nFile: {csv_file.name}")
+    print(f"Row count: {len(df)}")
+    print(f"Column count: {len(df.columns)}")
+    print(f"\nColumn names:")
+    for i, col in enumerate(df.columns, 1):
+        print(f"  {i}. {col}")
     
-    # Write raw data to output folder
-    output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"\nNull counts per column:")
+    null_counts = df.isnull().sum()
+    for col in df.columns:
+        print(f"  {col}: {null_counts[col]}")
+    
+    print(f"\nData types:")
+    for col in df.columns:
+        print(f"  {col}: {df[col].dtype}")
+    
+    output_file = output_dir / 'sample.csv'
     df.to_csv(output_file, index=False)
     
-    print(f"\n✓ Raw data successfully written to: {output_file}")
-    print(f"✓ Retrieval completed successfully.")
-    
+    print(f"\n[OK] Raw data successfully written to: {output_file}")
+    print("=" * 80)
+
 except Exception as e:
-    print(f"ERROR: {type(e).__name__}: {str(e)}")
+    print(f"ERROR: {str(e)}")
     import traceback
     traceback.print_exc()
+    exit(1)

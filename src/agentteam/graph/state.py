@@ -83,3 +83,6 @@ class GraphState(AgentState):
 
     # Metadata (run config, model info, etc.)
     metadata: dict[str, Any]
+
+    # Repair Agent cap
+    repair_attempts: Annotated[int, lambda x, y: y]  # always replace with latest value

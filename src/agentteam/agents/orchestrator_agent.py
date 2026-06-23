@@ -15,12 +15,17 @@ from langgraph.graph import END, StateGraph
 from omegaconf import DictConfig
 
 from agentteam.agents.retrieval_agent import retrieval_agent_app
+from agentteam.agents.validation_agent import validation_agent_app
 from agentteam.graph.state import GraphState
-from agentteam.models.structured_outputs import RetrievalResult, RoutingDecision
+from agentteam.models.structured_outputs import (
+    RetrievalResult,
+    RoutingDecision,
+    ValidatorResult,
+)
 
 logger = logging.getLogger(__name__)
 
-PHASE = 1
+PHASE = 2
 
 
 class Orchestrator:
@@ -102,6 +107,8 @@ class Orchestrator:
                             f"Agent summary:\n{summary}\n\n"
                             f"Tool outputs:\n{chr(10).join(tool_outputs)}\n\n"
                             f"Extract: status, summary, script_path, output_path, errors."
+                            f'errors must be a JSON array of strings, e.g. [] or ["error1"].\n'
+                            f"Never return errors as a plain string."
                         )
                     )
                 ]
@@ -109,9 +116,11 @@ class Orchestrator:
             return result
         except Exception as e:
             logger.warning(f"Structured extraction failed, using fallback: {e}")
-            return self._fallback_parse(summary, tool_outputs)
+            return self._fallback_parse_retrieval(summary, tool_outputs)
 
-    def _fallback_parse(self, summary: str, tool_outputs: list[str]) -> RetrievalResult:
+    def _fallback_parse_retrieval(
+        self, summary: str, tool_outputs: list[str]
+    ) -> RetrievalResult:
         """Rule-based fallback extraction if LLM parsing fails."""
         script_path = self._extract_path_from_outputs(tool_outputs, "generated", ".py")
         output_path = self._extract_path_from_outputs(tool_outputs, "output", ".csv")
@@ -124,7 +133,52 @@ class Orchestrator:
             errors=[] if status == "complete" else ["No output CSV produced."],
         )
 
-    def _decide_routing(self, result: RetrievalResult) -> RoutingDecision:
+    def _parse_validator_result(self, messages: list) -> ValidatorResult:
+        """Uses structured LLM output to extract ValidatorResult from agent messages."""
+        tool_outputs = self._extract_tool_outputs(messages)
+        summary = self._extract_last_ai_message(messages)
+        try:
+            extraction_llm = self._build_structured_llm(ValidatorResult)
+            result: ValidatorResult = extraction_llm.invoke(
+                [
+                    HumanMessage(
+                        content=(
+                            f"Extract the validation result from the following agent output.\n\n"
+                            f"Agent summary:\n{summary}\n\n"
+                            f"Tool outputs:\n{chr(10).join(tool_outputs)}\n\n"
+                            f"Extract: status, validation_outcome, script_path, report_path, errors, summary."
+                        )
+                    )
+                ]
+            )
+            return result
+        except Exception as e:
+            logger.warning(
+                f"Structured validator extraction failed, using fallback: {e}"
+            )
+            return self._fallback_parse_validator(summary, tool_outputs)
+
+    def _fallback_parse_validator(
+        self, summary: str, tool_outputs: list[str]
+    ) -> ValidatorResult:
+        """Rule-based fallback extraction if LLM parsing fails."""
+        script_path = self._extract_path_from_outputs(tool_outputs, "generated", ".py")
+        report_path = self._extract_path_from_outputs(tool_outputs, "logs", ".json")
+        validation_outcome = (
+            "FAIL" if any("ERROR" in o or "FAIL" in o for o in tool_outputs) else "PASS"
+        )
+        return ValidatorResult(
+            status="complete",
+            validation_outcome=validation_outcome,
+            script_path=script_path,
+            report_path=report_path,
+            errors=[],
+            summary=summary,
+        )
+
+    def _decide_routing(
+        self, result: RetrievalResult | ValidatorResult
+    ) -> RoutingDecision:
         """Uses structured LLM output to decide the next node."""
         try:
             routing_llm = self._build_structured_llm(RoutingDecision)
@@ -145,16 +199,18 @@ class Orchestrator:
             logger.warning(f"Structured routing failed, using fallback: {e}")
             return self._fallback_routing(result)
 
-    def _fallback_routing(self, result: RetrievalResult) -> RoutingDecision:
+    def _fallback_routing(
+        self, result: RetrievalResult | ValidatorResult
+    ) -> RoutingDecision:
         """Rule-based fallback routing if LLM routing fails."""
         if result.status == "complete":
             return RoutingDecision(
                 next_node="end",
-                reason="Retrieval completed successfully.",
+                reason="Agent completed successfully.",
             )
         return RoutingDecision(
             next_node="end",
-            reason=f"Retrieval failed: {result.errors}",
+            reason=f"Agent failed: {result.errors}",
         )
 
     def _make_retrieval_node(self):
@@ -175,6 +231,26 @@ class Orchestrator:
 
         return retrieval_node
 
+    def _make_validator_node(self):
+        """Runs the validator agent and writes structured results to GraphState."""
+        agent = validation_agent_app(self.llm_model, self.workspace)
+
+        def validator_node(state: GraphState) -> dict:
+            logger.info("Running validation agent...")
+            result = agent.invoke({"messages": state["messages"]})
+            messages = result.get("messages", [])
+            validator_result = self._parse_validator_result(messages)
+            logger.info(
+                f"Validator status: {validator_result.status} — outcome: {validator_result.validation_outcome}"
+            )
+            return {
+                "messages": messages,
+                "validated_data": validator_result.model_dump(),
+                "errors": validator_result.errors,
+            }
+
+        return validator_node
+
     def _route_after_retrieval(self, state: GraphState) -> str:
         """Determines next node after retrieval using structured LLM decision."""
         retrieved = state.get("retrieved_data", {})
@@ -190,15 +266,40 @@ class Orchestrator:
         decision = self._decide_routing(result)
         return decision.next_node
 
+    def _route_after_validation(self, state: GraphState) -> str:
+        """Determines next node after validation using structured LLM decision."""
+        validated = state.get("validated_data", {})
+        result = (
+            ValidatorResult(**validated)
+            if validated
+            else ValidatorResult(
+                status="failed",
+                validation_outcome="FAIL",
+                errors=["validated_data was empty."],
+                summary="No validation data found.",
+            )
+        )
+        decision = self._decide_routing(result)
+        return decision.next_node
+
     def _build_app(self):
         graph = StateGraph(GraphState)
         graph.add_node("retrieval_agent", self._make_retrieval_node())
+        graph.add_node("validation_agent", self._make_validator_node())
         graph.set_entry_point("retrieval_agent")
         graph.add_conditional_edges(
             "retrieval_agent",
             self._route_after_retrieval,
             {
-                "validator_agent": "validator_agent" if PHASE >= 2 else END,
+                "validation_agent": "validation_agent" if PHASE >= 2 else END,
+                "repair_agent": "repair_agent" if PHASE >= 3 else END,
+                "end": END,
+            },
+        )
+        graph.add_conditional_edges(
+            "validation_agent",
+            self._route_after_validation,
+            {
                 "repair_agent": "repair_agent" if PHASE >= 3 else END,
                 "end": END,
             },
