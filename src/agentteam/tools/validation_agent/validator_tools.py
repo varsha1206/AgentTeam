@@ -25,8 +25,11 @@ class ValidatorTools:
     All tools operate within the provided workspace directories.
     """
 
-    def __init__(self, output_dir: Path, generated_dir: Path, logs_dir: Path):
-        self.output_dir = output_dir
+    def __init__(
+        self, bronze_dir: Path, silver_dir: Path, generated_dir: Path, logs_dir: Path
+    ):
+        self.bronze_dir = bronze_dir
+        self.silver_dir = silver_dir
         self.generated_dir = generated_dir
         self.logs_dir = logs_dir
         self._validate_dirs()
@@ -36,21 +39,18 @@ class ValidatorTools:
     # -----------------------------
 
     def _validate_dirs(self) -> None:
-        for path in [self.output_dir, self.generated_dir, self.logs_dir]:
+        for path in [
+            self.bronze_dir,
+            self.silver_dir,
+            self.generated_dir,
+            self.logs_dir,
+        ]:
             if not path.exists():
                 raise FileNotFoundError(f"Required directory not found at {path}")
 
     # -----------------------------
     # Tools
     # -----------------------------
-
-    def list_output_files(self) -> str:
-        """List all files in the output directory."""
-        files = [f for f in self.output_dir.rglob("*") if f.is_file()]
-        if not files:
-            return f"No files found in {self.output_dir}"
-        return "\n".join(str(f) for f in files)
-
     def read_sample(self, file_path: str) -> str:
         """Read first 20 rows of a CSV for schema inference."""
         path = Path(file_path)
@@ -82,7 +82,7 @@ class ValidatorTools:
         if not src.exists():
             return f"ERROR: Source file not found at {src}"
         df = pd.read_csv(src)
-        out_path = self.output_dir / "validated_data.csv"
+        out_path = self.silver_dir / src.name
         df.to_csv(out_path, index=False, encoding="utf-8")
         logger.info(f"Validated data written: {out_path}")
         return str(out_path)
@@ -110,13 +110,28 @@ class ValidatorTools:
         except Exception as e:
             return f"ERROR: {e}"
 
-    def write_validation_report(self, report: ValidationReport) -> str:
-        """Write structured validation report to workspace/logs/."""
+    def write_validation_report(
+        self, report: ValidationReport, source_file: str
+    ) -> str:
+        """Append structured validation report to workspace/logs/validation_report.json."""
         report_path = self.logs_dir / "validation_report.json"
-        report_path.write_text(
-            json.dumps(report.model_dump(), indent=2), encoding="utf-8"
+
+        if report_path.exists():
+            existing_data = json.loads(report_path.read_text(encoding="utf-8"))
+            if not isinstance(existing_data, list):
+                existing_data = [existing_data]
+        else:
+            existing_data = []
+
+        entry = report.model_dump()
+        entry["source_file"] = source_file
+
+        existing_data.append(entry)
+
+        report_path.write_text(json.dumps(existing_data, indent=2), encoding="utf-8")
+        logger.info(
+            f"Validation report appended: {report_path} — {report.status} for {source_file}"
         )
-        logger.info(f"Validation report written: {report_path} — {report.status}")
         return str(report_path)
 
     # -----------------------------
@@ -125,15 +140,6 @@ class ValidatorTools:
 
     def as_tools(self) -> list:
         _self = self
-
-        @tool
-        def list_output_files() -> str:
-            """
-            ALWAYS call this first.
-            Lists all files in the output directory produced by the retrieval agent.
-            Do NOT assume anything about available files without calling this first.
-            """
-            return _self.list_output_files()
 
         @tool
         def read_sample(file_path: str) -> str:
@@ -187,15 +193,17 @@ class ValidatorTools:
             column_count: int,
             errors: list[str],
             summary: str,
+            source_file: str,
         ) -> str:
             """
-            Write the final validation report to workspace/logs/.
+            Append the validation report for this file to workspace/logs/validation_report.json.
             Args:
                 status: 'PASS' or 'FAIL'
                 row_count: total number of rows in the dataset
                 column_count: total number of columns in the dataset
                 errors: list of validation errors found, empty if PASS
                 summary: one sentence summary of the result
+                source_file: the absolute path of the file that was validated
             """
             return _self.write_validation_report(
                 ValidationReport(
@@ -204,11 +212,11 @@ class ValidatorTools:
                     column_count=column_count,
                     errors=errors,
                     summary=summary,
-                )
+                ),
+                source_file=source_file,
             )
 
         return [
-            list_output_files,
             read_sample,
             write_script,
             execute_script,

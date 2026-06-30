@@ -1,16 +1,34 @@
-{
-  "status": "FAIL",
-  "row_count": 10,
-  "column_count": 4,
-  "errors": [
-    "sample.csv: Column 'name' has null values: 1 rows",
-    "sample.csv: Column 'age' has null values: 1 rows",
-    "sample.csv: Column 'salary' has null values: 1 rows",
-    "sample.csv: Column 'age' contains non-numeric values: ['abc']",
-    "sample2.csv: Column 'student_name' has null values: 1 rows",
-    "sample2.csv: Column 'age' has null values: 1 rows",
-    "sample2.csv: Column 'city' has null values: 1 rows",
-    "sample2.csv: Column 'age' contains non-numeric values: ['abc']"
-  ],
-  "summary": "Validation FAILED: Both datasets contain missing values in critical columns and contain non-numeric values in the age column."
-}
+[
+  {
+    "status": "FAIL",
+    "row_count": 5,
+    "column_count": 4,
+    "errors": [
+      "Column 'name' has 1 null values",
+      "Column 'age' contains non-numeric value: 'abc'"
+    ],
+    "summary": "Validation failed: Found null values in 'name' column and non-numeric value 'abc' in 'age' column",
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\sample.csv"
+  },
+  {
+    "status": "FAIL",
+    "row_count": 5,
+    "column_count": 4,
+    "errors": [
+      "Column 'student_name' contains 1 null values",
+      "Column 'age' contains 1 null values",
+      "Column 'city' contains 1 null values",
+      "Column 'age' contains non-numeric values: ['abc']"
+    ],
+    "summary": "Validation FAILED due to null values in non-nullable columns and non-numeric value 'abc' in age column",
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\sample2.csv"
+  },
+  {
+    "status": "PASS",
+    "row_count": 3,
+    "column_count": 4,
+    "errors": [],
+    "summary": "File sample3.csv passed all validation checks with correct schema, data types, no nulls, no duplicates, and valid data values.",
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\sample3.csv"
+  }
+]

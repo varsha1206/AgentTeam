@@ -253,37 +253,101 @@ class Orchestrator:
             result = agent.invoke({"messages": state["messages"]})
             messages = self._current_turn_messages(state, result)
             retrieval_result = self._parse_retrieval_result(messages)
-            logger.info(f"Retrieval status: {retrieval_result.status}")
+
+            bronze_dir = self.workspace / "output" / "bronze"
+            bronze_files = [str(f) for f in bronze_dir.glob("*.csv")]
+
+            logger.info(
+                f"Retrieval status: {retrieval_result.status}— bronze files: {bronze_files}"
+            )
             return {
                 "messages": messages,
                 "retrieved_data": retrieval_result.model_dump(),
+                "bronze_layer": bronze_files,
                 "errors": retrieval_result.errors,
             }
 
         return retrieval_node
 
     def _make_validator_node(self):
-        """Runs the validator agent and writes structured results to GraphState."""
+        """Runs the validator agent once per bronze layer file and writes structured results to GraphState."""
         agent = validation_agent_app(self.llm_model, self.workspace)
 
         def validator_node(state: GraphState) -> dict:
             logger.info("Running validation agent...")
-            retrieved = state.get("retrieved_data", {})
-            result = agent.invoke(
-                {
-                    "messages": state["messages"]
-                    + [HumanMessage(content=f"Retrieval context: {retrieved}")]
+            bronze_files = state.get("bronze_layer", [])
+
+            if not bronze_files:
+                logger.warning("No bronze layer files to validate")
+                empty_result = ValidatorResult(
+                    status="failed",
+                    validation_outcome="FAIL",
+                    errors=["No bronze layer files found."],
+                    summary="No files to validate.",
+                )
+                return {
+                    "validated_data": empty_result.model_dump(),
+                    "silver_layer": [],
+                    "errors": empty_result.errors,
                 }
+
+            silver_dir = self.workspace / "output" / "silver"
+            all_errors = []
+            silver_files = []
+            per_file_results = []
+            all_messages = []
+
+            for idx, file_path in enumerate(bronze_files, start=1):
+                logger.info(f"Validating: {file_path}")
+
+                file_stem = Path(file_path).stem  # e.g. "sample" from "sample.csv"
+
+                validation_instruction = HumanMessage(
+                    content=(
+                        f"Validate the file at: {file_path}\n"
+                        f"This is the only file you should validate in this call. "
+                        f"Use this exact path with read_sample.\n"
+                        f"Name your validation script 'validation_{file_stem}.py' "
+                        f"(e.g. if validating sample.csv, name it validation_sample.py)."
+                    )
+                )
+
+                result = agent.invoke({"messages": [validation_instruction]})
+                messages = result.get("messages", [])
+                all_messages.extend(messages)
+
+                file_result = self._parse_validator_result(messages)
+                per_file_results.append(file_result)
+                all_errors.extend(file_result.errors)
+
+                if file_result.validation_outcome == "PASS":
+                    src_name = Path(file_path).name
+                    silver_path = silver_dir / src_name
+                    if silver_path.exists():
+                        silver_files.append(str(silver_path))
+
+            overall_outcome = (
+                "PASS"
+                if all(r.validation_outcome == "PASS" for r in per_file_results)
+                else "FAIL"
             )
-            messages = self._current_turn_messages(state, result)
-            validator_result = self._parse_validator_result(messages)
+
+            combined_result = ValidatorResult(
+                status="complete",
+                validation_outcome=overall_outcome,
+                errors=all_errors,
+                summary=f"Validated {len(bronze_files)} files — {len(silver_files)} passed.",
+            )
+
             logger.info(
-                f"Validator status: {validator_result.status} — outcome: {validator_result.validation_outcome}"
+                f"Validation complete — outcome: {overall_outcome} — silver files: {silver_files}"
             )
+
             return {
-                "messages": messages,
-                "validated_data": validator_result.model_dump(),
-                "errors": validator_result.errors,
+                "messages": all_messages,
+                "validated_data": combined_result.model_dump(),
+                "silver_layer": silver_files,
+                "errors": all_errors,
             }
 
         return validator_node

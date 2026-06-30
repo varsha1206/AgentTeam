@@ -74,6 +74,12 @@ class GraphState(AgentState):
     validated_data: Annotated[Any, replace_dict]
     repaired_data: Annotated[Any, merge_dict]
 
+    # Data layers
+    bronze_layer: Annotated[
+        list[str], lambda x, y: y
+    ]  # list of file paths from retrieval
+    silver_layer: Annotated[list[str], lambda x, y: y]  # list of validated file paths
+
     # Error handling
     errors: Annotated[list[str], operator.add]
 

@@ -38,7 +38,8 @@ class ValidationAgent:
         self.llm_model = llm_model
         self.cfg: DictConfig = self._load_config()
         self.tools = ValidatorTools(
-            output_dir=workspace / "output",
+            bronze_dir=workspace / "output/bronze",
+            silver_dir=workspace / "output/silver",
             generated_dir=workspace / "generated",
             logs_dir=workspace / "logs",
         )
@@ -56,7 +57,6 @@ class ValidationAgent:
 
     def _build_prompt(self) -> SystemMessage:
         prompt = self.cfg.system_prompt.format(
-            output_dir=self.tools.output_dir,
             generated_dir=self.tools.generated_dir,
             logs_dir=self.tools.logs_dir,
         )

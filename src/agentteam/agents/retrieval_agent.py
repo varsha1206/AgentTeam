@@ -37,7 +37,7 @@ class RetrievalAgent:
         self.cfg: DictConfig = self._load_config()
         self.tools = RetrievalTools(
             input_dir=workspace / "input",
-            output_dir=workspace / "output",
+            bronze_dir=workspace / "output" / "bronze",
             generated_dir=workspace / "generated",
         )
         self.app = self._build_app()
@@ -59,7 +59,7 @@ class RetrievalAgent:
     def _build_prompt(self) -> SystemMessage:
         prompt = self.cfg.system_prompt.format(
             input_dir=self.tools.input_dir,
-            output_dir=self.tools.output_dir,
+            output_dir=self.tools.bronze_dir,
             generated_dir=self.tools.generated_dir,
         )
         return SystemMessage(

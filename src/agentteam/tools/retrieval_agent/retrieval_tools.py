@@ -23,9 +23,9 @@ class RetrievalTools:
     All tools operate within the provided workspace directories.
     """
 
-    def __init__(self, input_dir: Path, output_dir: Path, generated_dir: Path):
+    def __init__(self, input_dir: Path, bronze_dir: Path, generated_dir: Path):
         self.input_dir = input_dir
-        self.output_dir = output_dir
+        self.bronze_dir = bronze_dir
         self.generated_dir = generated_dir
         self._validate_dirs()
 
@@ -36,8 +36,8 @@ class RetrievalTools:
     def _validate_dirs(self) -> None:
         if not self.input_dir.exists():
             raise FileNotFoundError(f"Input directory not found at {self.input_dir}")
-        if not self.output_dir.exists():
-            raise FileNotFoundError(f"Output directory not found at {self.output_dir}")
+        if not self.bronze_dir.exists():
+            raise FileNotFoundError(f"Bronze directory not found at {self.bronze_dir}")
 
     # -----------------------------
     # Tools
@@ -77,7 +77,7 @@ class RetrievalTools:
             filename: filename only, e.g. 'result.csv'
             content: string content to write
         """
-        out_path = self.output_dir / filename
+        out_path = self.bronze_dir / filename
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(content, encoding="utf-8")
         logger.info(f"Written to {out_path}")
