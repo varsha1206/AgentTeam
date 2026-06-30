@@ -1,0 +1,6 @@
+student_id,student_name,age,city
+1,Alice,30,Heidelberg
+2,Bob,,Mannheim
+3,,25,
+4,Diana,abc,Neuostheim
+5,Eve,28,Frankfurt

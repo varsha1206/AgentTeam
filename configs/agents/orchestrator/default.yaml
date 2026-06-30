@@ -39,3 +39,16 @@ system_prompt: |
 
 temperature: 0
 max_iterations: 10
+
+routing_prompt: |
+  An agent finished with status: {status}.
+  Summary: {summary}
+  Errors: {errors}
+
+  Available next nodes: validation_agent, repair_agent, end.
+  If status is complete and no errors, route to the next logical agent in the pipeline.
+  If retrieval completed, route to validation_agent.
+  If validation passed (no errors), route to end.
+  If validation failed (errors present), route to repair_agent.
+  If anything failed, route to end.
+  Decide the next node.

@@ -5,9 +5,37 @@ main.py - Test entrypoint for the AgentTeam pipeline
 import logging
 from pathlib import Path
 
+import colorlog
+
 from agentteam.agents.orchestrator_agent import Orchestrator
 
-logging.basicConfig(level=logging.INFO)
+
+def setup_logging():
+    handler = colorlog.StreamHandler()
+    handler.setFormatter(
+        colorlog.ColoredFormatter(
+            "%(log_color)s%(asctime)s %(levelname)-8s %(name)s: %(message)s%(reset)s",
+            datefmt="%H:%M:%S",
+            log_colors={
+                "DEBUG": "cyan",
+                "INFO": "green",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "bold_red",
+            },
+        )
+    )
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.handlers = [handler]
+
+    # quiet down noisy libraries
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("anthropic").setLevel(logging.WARNING)
+
+
+setup_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -31,7 +59,8 @@ def create_workspace() -> Path:
     required_dirs = [
         "input",
         "generated",
-        "outputs",
+        "output/bronze",
+        "output/silver",
         "logs",
         "temp",
     ]
@@ -116,7 +145,7 @@ def main():
                 "content": (
                     "Retrieve the dataset from the input folder. "
                     "Read all available CSV files, summarise their contents, "
-                    "and write the raw data to the outputs folder."
+                    "and write the raw data to the output folder."
                 ),
             }
         ],

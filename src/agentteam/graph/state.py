@@ -4,11 +4,10 @@ Graphstate: Central state for the entire agent pipeline
 
 from __future__ import annotations
 
+import operator
 from typing import Annotated, Any, Mapping
 
 from langchain.agents import AgentState
-from langchain.chat_models import BaseChatModel
-from langgraph.managed.is_last_step import RemainingSteps
 
 
 def merge_dict(existing: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
@@ -63,7 +62,6 @@ class GraphState(AgentState):
     - debuggable (trace log)
     """
 
-    remaining_steps: RemainingSteps
     # Workspace information
     workspace_path: str
     execution_plan: list[str]
@@ -76,8 +74,14 @@ class GraphState(AgentState):
     validated_data: Annotated[Any, replace_dict]
     repaired_data: Annotated[Any, merge_dict]
 
+    # Data layers
+    bronze_layer: Annotated[
+        list[str], lambda x, y: y
+    ]  # list of file paths from retrieval
+    silver_layer: Annotated[list[str], lambda x, y: y]  # list of validated file paths
+
     # Error handling
-    errors: Annotated[list[str], merge_dict]
+    errors: Annotated[list[str], operator.add]
 
     # Flexible artifact store
     # (LLM/tool outputs, agent memory, etc.)
@@ -85,4 +89,6 @@ class GraphState(AgentState):
 
     # Metadata (run config, model info, etc.)
     metadata: dict[str, Any]
-    llm_model: BaseChatModel
+
+    # Repair Agent cap
+    repair_attempts: Annotated[int, lambda x, y: y]  # always replace with latest value
