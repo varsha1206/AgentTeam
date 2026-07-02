@@ -145,18 +145,20 @@ def main():
                 "role": "user",
                 "content": (
                     "Retrieve the dataset from the input folder. "
-                    "Read all available CSV files, summarise their contents, "
+                    "Read all available files, summarise their contents, "
                     "and write the raw data to the output folder."
                 ),
             }
         ],
-        "raw_input": str(workspace_path / "input" / "sample.csv"),
+        "raw_input": str(workspace_path / "input" / "employee_data.csv"),
         "workspace_path": workspace_path,
         "execution_plan": [],
         "final_output": None,
         "retrieved_data": {},
         "validated_data": {},
         "repaired_data": {},
+        "bronze_layer": [],
+        "silver_layer": [],
         "quarantine_layer": [],
         "repair_target": None,
         "repair_error": None,

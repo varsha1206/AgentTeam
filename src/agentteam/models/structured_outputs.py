@@ -49,6 +49,59 @@ class RetrievalResult(BaseModel):
     )
 
 
+class DataSource(BaseModel):
+    """Describes where and how to read source data."""
+
+    source_type: Literal["csv", "json", "api"] = Field(
+        description="The type of data source."
+    )
+    path: str | None = Field(
+        default=None, description="Absolute file path for csv or json sources."
+    )
+    url: str | None = Field(default=None, description="Endpoint URL for api sources.")
+    method: Literal["GET", "POST"] | None = Field(
+        default=None, description="HTTP method for api sources."
+    )
+    headers: dict[str, str] = Field(
+        default_factory=dict, description="HTTP headers for api sources."
+    )
+    params: dict[str, str] = Field(
+        default_factory=dict, description="Query params or POST body for api sources."
+    )
+    output_filename: str = Field(
+        description="What to name the output bronze file e.g. 'employee_data.csv'."
+    )
+
+
+class AgentInstruction(BaseModel):
+    """Structured instruction sent by the orchestrator to an agent at invocation time."""
+
+    task: Literal[
+        "full_pipeline",
+        "transform_and_validate",
+        "validate_only",
+        "repair_transformation",
+        "repair_retrieval",
+    ] = Field(description="What the agent should do this invocation.")
+    source: DataSource | None = Field(
+        default=None, description="Data source description. Retrieval agent only."
+    )
+    target_file: str | None = Field(
+        default=None, description="Absolute path to the file to process."
+    )
+    script_to_repair: str | None = Field(
+        default=None,
+        description="Absolute path to the script that needs patching. Repair agent only.",
+    )
+    errors: list[str] = Field(
+        default_factory=list,
+        description="Errors from the previous run that need to be addressed.",
+    )
+    context: str | None = Field(
+        default=None, description="Any additional context the agent needs."
+    )
+
+
 class ValidatorResult(BaseModel):
     """Structured result extracted from validator agent messages."""
 
@@ -125,6 +178,42 @@ class TransformationRule(BaseModel):
     )
 
 
+class TransformationEntry(BaseModel):
+    """A single transformation applied to the dataset."""
+
+    operation: str = Field(description="The transformation operation applied.")
+    columns: list[str] | None = Field(
+        default=None,
+        description="Columns the operation was applied to. None means all columns.",
+    )
+    rows_affected: int = Field(
+        default=0, description="Number of rows affected by this transformation."
+    )
+    reason: str = Field(description="Why this transformation was applied.")
+
+
+class TransformationReport(BaseModel):
+    """Structured report of all transformations applied to a single file."""
+
+    source_file: str = Field(description="Absolute path to the bronze source file.")
+    output_file: str = Field(description="Absolute path to the transformed temp file.")
+    total_rows_input: int = Field(description="Total rows in the bronze file.")
+    total_rows_output: int = Field(
+        description="Rows written to temp after transformation."
+    )
+    quarantined_rows: int = Field(description="Rows sent to quarantine.")
+    transformations_applied: list[TransformationEntry] = Field(
+        default_factory=list, description="Ordered list of transformations applied."
+    )
+    inferred_rules: bool = Field(
+        default=False,
+        description="True if any rules were inferred by LLM rather than user-defined.",
+    )
+    summary: str = Field(
+        description="One sentence summary of the transformation outcome."
+    )
+
+
 class FileValidationRules(BaseModel):
     """Complete validation and transformation rules for a single file."""
 
@@ -173,3 +262,21 @@ class QuarantineReport(BaseModel):
     entries: list[QuarantineEntry] = Field(
         default_factory=list, description="One entry per quarantined row."
     )
+
+
+class RepairResult(BaseModel):
+    """Structured result extracted from repair agent messages."""
+
+    status: Literal["complete", "failed"] = Field(
+        description="Whether the repair process completed successfully."
+    )
+    script_path: str | None = Field(
+        default=None, description="Absolute path to the repaired script."
+    )
+    output_path: str | None = Field(
+        default=None, description="Absolute path to the repaired output CSV."
+    )
+    errors: list[str] = Field(
+        default_factory=list, description="Any errors encountered during repair."
+    )
+    summary: str = Field(description="One sentence summary of what was repaired.")

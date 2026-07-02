@@ -6,7 +6,6 @@ Responsible for reading output data, generating validation scripts,
 executing them, and writing structured reports.
 """
 
-import io
 import json
 import logging
 import subprocess
@@ -16,7 +15,15 @@ import pandas as pd
 import yaml
 from langchain.tools import tool
 
-from agentteam.models.structured_outputs import GeneratedScript, ValidationReport
+from agentteam.models.structured_outputs import (
+    ColumnRule,
+    FileValidationRules,
+    GeneratedScript,
+    TransformationEntry,
+    TransformationReport,
+    TransformationRule,
+    ValidationReport,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +42,14 @@ class ValidatorTools:
         generated_dir: Path,
         logs_dir: Path,
         rules_path: Path,
+        temp_dir: Path,
     ):
         self.bronze_dir = bronze_dir
         self.silver_dir = silver_dir
         self.quarantine_dir = quarantine_dir
         self.generated_dir = generated_dir
         self.logs_dir = logs_dir
+        self.temp_dir = temp_dir
         self.rules_path = rules_path
         self._validate_dirs()
 
@@ -54,6 +63,7 @@ class ValidatorTools:
             self.silver_dir,
             self.generated_dir,
             self.logs_dir,
+            self.temp_dir,
             self.quarantine_dir,
         ]:
             if not path.exists():
@@ -88,21 +98,20 @@ class ValidatorTools:
         return str(script_path)
 
     def write_validated_data(self, source_path: str) -> str:
-        """Copy validated CSV to workspace/output/validated_data.csv on PASS."""
+        """Promote a validated transformed file from temp to silver."""
         src = Path(source_path)
         if not src.exists():
             return f"ERROR: Source file not found at {src}"
         df = pd.read_csv(src)
-        out_path = self.silver_dir / src.name
+        out_path = self.silver_dir / src.name.replace("transformed_", "")
         df.to_csv(out_path, index=False, encoding="utf-8")
         logger.info(f"Validated data written: {out_path}")
         return str(out_path)
 
     def execute_script(self, script_path: str) -> str:
-        """Execute a validation script and return its output."""
         path = Path(script_path)
         if not path.exists():
-            return f"ERROR: Script not found at {path}"
+            return "SCRIPT_FAILED: Script not found"
         try:
             result = subprocess.run(
                 ["python", str(path)],
@@ -112,14 +121,42 @@ class ValidatorTools:
                 encoding="utf-8",
             )
             if result.returncode != 0:
-                logger.error(f"Validation script failed: {result.stderr}")
-                return f"ERROR (exit {result.returncode}):\n{result.stderr}"
-            logger.info(f"Validation script executed: {path}")
-            return result.stdout or "Script completed with no output."
+                logger.error(f"Script failed: {result.stderr}")
+                return f"SCRIPT_FAILED (exit {result.returncode}):\n{result.stderr}"
+
+            output = result.stdout.strip()
+            logger.info(f"Script executed: {path}")
+
+            # Validate JSON output so agent never sees malformed responses
+            try:
+                json.loads(output)
+                return f"SCRIPT_SUCCESS:\n{output}"
+            except json.JSONDecodeError:
+                return (
+                    f"SCRIPT_FAILED: Script ran but did not print valid JSON.\n"
+                    f"Raw output was:\n{output[:500]}"
+                )
+
         except subprocess.TimeoutExpired:
-            return "ERROR: Script timed out after 30 seconds"
+            return "SCRIPT_FAILED: timed out after 30 seconds"
         except Exception as e:
-            return f"ERROR: {e}"
+            return f"SCRIPT_FAILED: {e}"
+
+    def write_transformation_report(self, report: TransformationReport) -> str:
+        """Append transformation report to workspace/logs/transformation_report.json."""
+        report_path = self.logs_dir / "transformation_report.json"
+
+        if report_path.exists():
+            existing = json.loads(report_path.read_text(encoding="utf-8"))
+            if not isinstance(existing, list):
+                existing = [existing]
+        else:
+            existing = []
+
+        existing.append(report.model_dump())
+        report_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+        logger.info(f"Transformation report appended: {report_path} — {report.summary}")
+        return str(report_path)
 
     def write_validation_report(
         self, report: ValidationReport, source_file: str
@@ -146,49 +183,37 @@ class ValidatorTools:
         return str(report_path)
 
     def load_validation_rules(self, filename: str) -> str:
-        """Load and return validation rules for a specific file as a JSON string."""
+        """Load validation rules for a file. Returns a FileValidationRules JSON object."""
         if not self.rules_path.exists():
-            return json.dumps(
-                {
-                    "filename": filename,
-                    "user_defined": False,
-                    "global_rules": {},
-                    "file_rules": None,
-                    "message": "No validation_rules.yaml found. Infer all rules from data sample.",
-                }
-            )
+            return FileValidationRules(
+                filename=filename,
+                schema={},
+                transformations=[],
+                inferred=True,
+            ).model_dump_json(indent=2)
+
         rules = yaml.safe_load(self.rules_path.read_text(encoding="utf-8"))
         global_rules = rules.get("global_rules", {})
-        file_rules = rules.get("rules", {}).get(filename, None)
-        return json.dumps(
-            {
-                "filename": filename,
-                "user_defined": file_rules is not None,
-                "global_rules": global_rules,
-                "file_rules": file_rules,
-                "message": (
-                    "Apply file_rules overrides on top of global_rules. "
-                    "Infer any schema details not specified."
-                    if file_rules
-                    else "No file-specific rules. Apply global_rules and infer schema from sample."
-                ),
-            },
-            indent=2,
+        file_overrides = rules.get("rules", {}).get(filename, {}).get("overrides", {})
+        file_schema = rules.get("rules", {}).get(filename, {}).get("schema", {})
+        merged_transforms = {**global_rules, **file_overrides}
+
+        transformations = [
+            TransformationRule(**t)
+            for t in merged_transforms.get("transformations", [])
+        ]
+        schema = (
+            {col: ColumnRule(**col_rules) for col, col_rules in file_schema.items()}
+            if file_schema
+            else {}
         )
 
-    def write_quarantine(self, source_path: str, quarantine_data: str) -> str:
-        """Write quarantined rows with quarantine_reason column to workspace/output/quarantine/."""
-        src_name = Path(source_path).name
-        out_path = self.quarantine_dir / src_name
-        try:
-            df = pd.read_csv(io.StringIO(quarantine_data))
-            if "quarantine_reason" not in df.columns:
-                return "ERROR: quarantine_data must contain a quarantine_reason column"
-            df.to_csv(out_path, index=False, encoding="utf-8")
-            logger.info(f"Quarantine data written: {out_path} — {len(df)} rows")
-            return str(out_path)
-        except Exception as e:
-            return f"ERROR writing quarantine data: {e}"
+        return FileValidationRules(
+            filename=filename,
+            schema=schema,
+            transformations=transformations,
+            inferred=not bool(file_schema),
+        ).model_dump_json(indent=2)
 
     # -----------------------------
     # LangChain tool bindings
@@ -243,6 +268,45 @@ class ValidatorTools:
             return _self.write_validated_data(source_path)
 
         @tool
+        def write_transformation_report(
+            source_file: str,
+            output_file: str,
+            total_rows_input: int,
+            total_rows_output: int,
+            quarantined_rows: int,
+            transformations_applied: list[dict],
+            inferred_rules: bool,
+            summary: str,
+        ) -> str:
+            """
+            Write a structured transformation report to workspace/logs/transformation_report.json.
+            Call this after execute_script succeeds for the transformation script.
+            Args:
+                source_file: absolute path to the bronze source file
+                output_file: absolute path to the transformed temp file
+                total_rows_input: total rows in the bronze file
+                total_rows_output: rows written to temp after transformation
+                quarantined_rows: rows sent to quarantine
+                transformations_applied: list of dicts with operation, columns, rows_affected, reason
+                inferred_rules: true if any rules were LLM-inferred rather than user-defined
+                summary: one sentence summary of the transformation outcome
+            """
+            return _self.write_transformation_report(
+                TransformationReport(
+                    source_file=source_file,
+                    output_file=output_file,
+                    total_rows_input=total_rows_input,
+                    total_rows_output=total_rows_output,
+                    quarantined_rows=quarantined_rows,
+                    transformations_applied=[
+                        TransformationEntry(**t) for t in transformations_applied
+                    ],
+                    inferred_rules=inferred_rules,
+                    summary=summary,
+                )
+            )
+
+        @tool
         def write_validation_report(
             status: str,
             row_count: int,
@@ -275,30 +339,19 @@ class ValidatorTools:
         @tool
         def load_validation_rules(filename: str) -> str:
             """
-            Load validation rules for a specific file from validation_rules.yaml.
-            Call this before read_sample to get the rules to apply.
+            Load validation rules for a file. Returns a FileValidationRules JSON object.
+            Call this first before read_sample.
             Args:
-                filename: just the filename e.g. 'sample.csv', not the full path
+                 filename: just the filename e.g. 'sample.csv'
             """
             return _self.load_validation_rules(filename)
 
-        @tool
-        def write_quarantine(source_path: str, quarantine_data: str) -> str:
-            """
-            Write quarantined rows to workspace/output/quarantine/.
-            The quarantine_data must be a CSV string with a quarantine_reason column added.
-            Args:
-                source_path: absolute path to the original bronze file being validated
-                quarantine_data: CSV string of bad rows with quarantine_reason column
-            """
-            return _self.write_quarantine(source_path, quarantine_data)
-
         return [
+            load_validation_rules,
             read_sample,
             write_script,
             execute_script,
+            write_transformation_report,
             write_validation_report,
             write_validated_data,
-            load_validation_rules,
-            write_quarantine,
         ]

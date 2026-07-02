@@ -20,6 +20,8 @@ from agentteam.agents.retrieval_agent import retrieval_agent_app
 from agentteam.agents.validation_agent import validation_agent_app
 from agentteam.graph.state import GraphState
 from agentteam.models.structured_outputs import (
+    AgentInstruction,
+    DataSource,
     RetrievalResult,
     RoutingDecision,
     ValidatorResult,
@@ -69,6 +71,11 @@ class Orchestrator:
         """Returns an LLM bound to a specific structured output schema."""
         return self.llm_model.with_structured_output(schema)
 
+    def _build_agent_instruction(self, **kwargs) -> HumanMessage:
+        """Builds a structured AgentInstruction and serialises it as a HumanMessage."""
+        instruction = AgentInstruction(**kwargs)
+        return HumanMessage(content=instruction.model_dump_json(indent=2))
+
     def _extract_tool_outputs(self, messages: list) -> list[str]:
         """Extract all tool output contents from a message list."""
         return [m.content for m in messages if hasattr(m, "type") and m.type == "tool"]
@@ -87,12 +94,6 @@ class Orchestrator:
         return "\n".join(
             item if isinstance(item, str) else str(item) for item in content
         )
-
-    def _current_turn_messages(self, state: GraphState, result: dict) -> list:
-        """Return only the messages added by the current agent invocation."""
-        messages = result.get("messages", [])
-        previous_count = len(state.get("messages", []))
-        return messages[previous_count:] if previous_count < len(messages) else messages
 
     def _extract_path_from_outputs(
         self, tool_outputs: list[str], *keywords: str
@@ -128,7 +129,7 @@ class Orchestrator:
                                 f"Never return errors as a plain string."
                             )
                         )
-                    ],
+                    ]
                 ),
             )
             return result
@@ -171,10 +172,9 @@ class Orchestrator:
                                 f"Extract: status, validation_outcome, script_path, report_path, errors, summary."
                             )
                         )
-                    ],
+                    ]
                 ),
             )
-            logger.info(f"Structured validator result entire: {result}")
             return result
         except Exception as e:
             logger.warning(
@@ -221,7 +221,7 @@ class Orchestrator:
                                 errors=result.errors,
                             )
                         )
-                    ],
+                    ]
                 ),
             )
             logger.info(f"Routing decision: {decision.next_node} — {decision.reason}")
@@ -250,18 +250,32 @@ class Orchestrator:
 
         def retrieval_node(state: GraphState) -> dict:
             logger.info("Running retrieval agent...")
-            result = agent.invoke({"messages": state["messages"]})
-            messages = self._current_turn_messages(state, result)
-            retrieval_result = self._parse_retrieval_result(messages)
 
+            input_dir = self.workspace / "input"
+            input_files = list(input_dir.glob("*.csv"))
+
+            all_messages = []
+            for input_file in input_files:
+                instruction = self._build_agent_instruction(
+                    task="full_pipeline",
+                    source=DataSource(
+                        source_type="csv",
+                        path=str(input_file),
+                        output_filename=input_file.name,
+                    ),
+                )
+                result = agent.invoke({"messages": [instruction]})
+                all_messages.extend(result.get("messages", []))
+
+            retrieval_result = self._parse_retrieval_result(all_messages)
             bronze_dir = self.workspace / "output" / "bronze"
             bronze_files = [str(f) for f in bronze_dir.glob("*.csv")]
 
             logger.info(
-                f"Retrieval status: {retrieval_result.status}— bronze files: {bronze_files}"
+                f"Retrieval status: {retrieval_result.status} — bronze files: {bronze_files}"
             )
             return {
-                "messages": messages,
+                "messages": all_messages,
                 "retrieved_data": retrieval_result.model_dump(),
                 "bronze_layer": bronze_files,
                 "errors": retrieval_result.errors,
@@ -297,22 +311,29 @@ class Orchestrator:
             per_file_results = []
             all_messages = []
 
-            for idx, file_path in enumerate(bronze_files, start=1):
+            report_path = self.workspace / "logs" / "validation_report.json"
+            transformation_report_path = (
+                self.workspace / "logs" / "transformation_report.json"
+            )
+            if report_path.exists():
+                report_path.unlink()
+
+            if transformation_report_path.exists():
+                transformation_report_path.unlink()
+
+            logger.info("Cleared stale reports")
+
+            for file_path in bronze_files:
                 logger.info(f"Validating: {file_path}")
+                filename = Path(file_path).name
 
-                file_stem = Path(file_path).stem  # e.g. "sample" from "sample.csv"
-
-                validation_instruction = HumanMessage(
-                    content=(
-                        f"Validate the file at: {file_path}\n"
-                        f"This is the only file you should validate in this call. "
-                        f"Use this exact path with read_sample.\n"
-                        f"Name your validation script 'validation_{file_stem}.py' "
-                        f"(e.g. if validating sample.csv, name it validation_sample.py)."
-                    )
+                instruction = self._build_agent_instruction(
+                    task="transform_and_validate",
+                    target_file=file_path,
+                    context=f"filename for rules lookup: {filename}",
                 )
 
-                result = agent.invoke({"messages": [validation_instruction]})
+                result = agent.invoke({"messages": [instruction]})
                 messages = result.get("messages", [])
                 all_messages.extend(messages)
 
@@ -321,8 +342,7 @@ class Orchestrator:
                 all_errors.extend(file_result.errors)
 
                 if file_result.validation_outcome == "PASS":
-                    src_name = Path(file_path).name
-                    silver_path = silver_dir / src_name
+                    silver_path = silver_dir / filename
                     if silver_path.exists():
                         silver_files.append(str(silver_path))
 

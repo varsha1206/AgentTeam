@@ -16,74 +16,68 @@ global_rules:
 rules:
   employee_data.csv:
     schema:
-
       status:
         type: str
         nullable: false
-
       department:
         type: str
-        nullable: false
-
+        nullable: true       # ← relaxed, 709 nulls
       salary:
-        type: float
+        type: str            # ← str not float, stored as low/medium/high
         nullable: false
-        min: 0
-
       tenure:
         type: float
-        nullable: false
+        nullable: true       # ← relaxed, 181 nulls
         min: 0
         max: 50
-
       recently_promoted:
-        type: bool
-        nullable: false
-
+        type: float
+        nullable: true       # ← relaxed, 97.8% null — fill instead of quarantine
       n_projects:
         type: int
         nullable: false
         min: 0
         max: 30
-
       avg_monthly_hrs:
-        type: float
+        type: int
         nullable: false
         min: 0
         max: 400
-
       satisfaction:
         type: float
-        nullable: false
+        nullable: true       # ← relaxed, 181 nulls
         min: 0
         max: 1
-
       last_evaluation:
         type: float
-        nullable: false
+        nullable: true       # ← relaxed, 1532 nulls
         min: 0
         max: 1
-
       filed_complaint:
-        type: bool
-        nullable: false
+        type: float
+        nullable: true       # ← relaxed, 85.5% null — fill instead of quarantine
 
-    transformations:
-      - operation: rename_to_snake_case
-
-      - operation: coerce_numeric
-        columns:
-          - salary
-          - tenure
-          - n_projects
-          - avg_monthly_hrs
-          - satisfaction
-          - last_evaluation
-
-      - operation: quarantine_missing
-
-      - operation: quarantine_duplicates
-
-      - operation: quarantine_type_mismatch
+    overrides:
+      transformations:
+        - operation: rename_to_snake_case
+        - operation: coerce_numeric
+          columns:
+            - tenure
+            - satisfaction
+            - last_evaluation
+        - operation: fill_missing_value
+          columns:
+            - filed_complaint
+          fill_value: "0"
+        - operation: fill_missing_value
+          columns:
+            - recently_promoted
+          fill_value: "0"
+        - operation: fill_missing_value
+          columns:
+            - department
+          fill_value: "unknown"
+        - operation: quarantine_missing   # only quarantine truly required fields now
+        - operation: quarantine_duplicates
 
     inferred: false
