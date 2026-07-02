@@ -7,23 +7,26 @@ try:
     
     df = pd.read_csv(input_file)
     
-    print('=== DATA RETRIEVAL SUMMARY ===')
-    print(f'File: employee_data.csv')
-    print(f'Row count: {len(df)}')
-    print(f'Column count: {len(df.columns)}')
-    print(f'Column names: {list(df.columns)}')
-    print('\nNull counts per column:')
-    null_counts = df.isnull().sum()
-    for col, null_count in null_counts.items():
-        print(f'  {col}: {null_count}')
+    print("=" * 60)
+    print("DATA RETRIEVAL SUMMARY")
+    print("=" * 60)
+    print(f"File: employee_data.csv")
+    print(f"Row count: {len(df)}")
+    print(f"\nColumn names: {list(df.columns)}")
+    print(f"\nNull counts per column:")
+    for col in df.columns:
+        null_count = df[col].isnull().sum()
+        print(f"  {col}: {null_count}")
     
-    output_file = Path(output_dir) / 'employee_data.csv'
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(output_file, index=False)
+    output_path = Path(output_dir) / 'employee_data.csv'
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_path, index=False)
     
-    print(f'\nSUCCESS: Raw data written to {output_file}')
+    print("\n" + "=" * 60)
+    print("Raw data written to: " + str(output_path))
+    print("Status: SUCCESS")
+    print("=" * 60)
     
 except Exception as e:
-    print(f'ERROR: {str(e)}')
-    import traceback
-    traceback.print_exc()
+    print("ERROR: " + str(e))
+    raise

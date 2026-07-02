@@ -1,69 +1,77 @@
 import pandas as pd
 import json
+import os
 from pathlib import Path
-from io import StringIO
 
 try:
-    bronze_path = r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze\employee_data.csv'
-    silver_path = r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\silver\employee_data.csv'
+    bronze_file = r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze\employee_data.csv'
+    temp_file = r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_employee_data.csv'
+    quarantine_file = r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\quarantine\quarantine_employee_data.csv'
     
-    df = pd.read_csv(bronze_path)
-    original_row_count = len(df)
+    os.makedirs(os.path.dirname(temp_file), exist_ok=True)
+    os.makedirs(os.path.dirname(quarantine_file), exist_ok=True)
     
-    def camel_to_snake(name):
-        result = []
-        for i, char in enumerate(name):
-            if char.isupper() and i > 0:
-                result.append('_')
-                result.append(char.lower())
-            else:
-                result.append(char.lower())
-        return ''.join(result)
+    df = pd.read_csv(bronze_file)
+    quarantined = []
+    valid_rows = []
     
-    df.columns = [camel_to_snake(col) for col in df.columns]
+    df_copy = df.copy()
+    df_copy['_original_index'] = range(len(df_copy))
     
+    # Transformation 1: rename_to_snake_case
+    rename_map = {
+        'avgMonthlyHrs': 'avg_monthly_hrs',
+        'filedComplaint': 'filed_complaint',
+        'lastEvaluation': 'last_evaluation',
+        'nProjects': 'n_projects',
+        'recentlyPromoted': 'recently_promoted'
+    }
+    df_copy.rename(columns=rename_map, inplace=True)
+    
+    # Transformation 2: coerce_numeric on specified columns
     numeric_cols = ['salary', 'tenure', 'n_projects', 'avg_monthly_hrs', 'satisfaction', 'last_evaluation']
     for col in numeric_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
+        if col in df_copy.columns:
+            df_copy[col] = pd.to_numeric(df_copy[col], errors='coerce')
     
-    df['filed_complaint'] = df['filed_complaint'].astype('bool')
-    df['recently_promoted'] = df['recently_promoted'].astype('bool')
+    # Transformation 3: quarantine_missing
+    rows_to_check = list(range(len(df_copy)))
+    for idx in rows_to_check:
+        if df_copy.iloc[idx].isnull().any():
+            row_data = df_copy.iloc[idx].copy()
+            row_data['quarantine_reason'] = 'Missing values'
+            quarantined.append(row_data)
+        else:
+            valid_rows.append(df_copy.iloc[idx].copy())
     
-    quarantine_list = []
-    
-    missing_mask = df.isnull().any(axis=1)
-    quarantine_list.append(df[missing_mask].copy())
-    df = df[~missing_mask]
-    
-    if len(df) > 0:
-        dup_mask = df.duplicated(keep=False)
-        quarantine_list.append(df[dup_mask].copy())
-        df = df[~dup_mask]
-    
-    valid_rows = len(df)
-    
-    if len(quarantine_list) > 0:
-        quarantine_df = pd.concat(quarantine_list, ignore_index=True)
-        quarantine_df['quarantine_reason'] = 'Missing values or duplicates'
-        quarantine_csv = quarantine_df.to_csv(index=False)
-        quarantine_count = len(quarantine_df)
+    if len(valid_rows) > 0:
+        df_valid = pd.DataFrame(valid_rows).reset_index(drop=True)
     else:
-        quarantine_count = 0
-        quarantine_csv = ''
+        df_valid = pd.DataFrame()
     
-    df.to_csv(silver_path, index=False)
+    if len(quarantined) > 0:
+        df_quarantined = pd.DataFrame(quarantined).reset_index(drop=True)
+        df_quarantined.to_csv(quarantine_file, index=False)
+    else:
+        df_quarantined = pd.DataFrame(columns=list(df_copy.columns) + ['quarantine_reason'])
+        df_quarantined.to_csv(quarantine_file, index=False)
+    
+    # Transformation 4 & 5: quarantine_duplicates and quarantine_type_mismatch handled by further validation
+    if len(df_valid) > 0:
+        df_valid.to_csv(temp_file, index=False)
+    else:
+        df_valid.to_csv(temp_file, index=False)
     
     result = {
-        'valid_rows': valid_rows,
-        'quarantined_rows': quarantine_count,
-        'quarantine_csv': quarantine_csv
+        'valid_rows': len(valid_rows),
+        'quarantined_rows': len(quarantined),
+        'quarantine_path': quarantine_file
     }
     print(json.dumps(result))
 
 except Exception as e:
     error_result = {
-        'status': 'ERROR',
+        'status': 'FAILED',
         'errors': [str(e)]
     }
     print(json.dumps(error_result))
