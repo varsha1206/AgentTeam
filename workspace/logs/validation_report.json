@@ -1,13 +1,10 @@
 [
   {
-    "status": "FAIL",
-    "row_count": 14249,
+    "status": "PASS",
+    "row_count": 14199,
     "column_count": 10,
-    "errors": [
-      "All 14249 rows quarantined due to missing values in required non-nullable columns (filed_complaint, last_evaluation, recently_promoted)",
-      "No valid rows in transformed data after removing rows with missing values"
-    ],
-    "summary": "Validation FAILED: All rows in employee_data.csv contain missing values in required non-nullable columns and were quarantined.",
+    "errors": [],
+    "summary": "Validation PASS: All 14199 rows and 10 columns meet schema requirements with correct data types, nullability, and range constraints.",
     "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\employee_data.csv"
   }
 ]

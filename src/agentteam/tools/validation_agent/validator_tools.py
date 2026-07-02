@@ -19,6 +19,8 @@ from agentteam.models.structured_outputs import (
     ColumnRule,
     FileValidationRules,
     GeneratedScript,
+    TransformationEntry,
+    TransformationReport,
     TransformationRule,
     ValidationReport,
 )
@@ -109,7 +111,7 @@ class ValidatorTools:
     def execute_script(self, script_path: str) -> str:
         path = Path(script_path)
         if not path.exists():
-            return f"ERROR: Script not found at {path}"
+            return "SCRIPT_FAILED: Script not found"
         try:
             result = subprocess.run(
                 ["python", str(path)],
@@ -121,13 +123,40 @@ class ValidatorTools:
             if result.returncode != 0:
                 logger.error(f"Script failed: {result.stderr}")
                 return f"SCRIPT_FAILED (exit {result.returncode}):\n{result.stderr}"
-            output = result.stdout.strip() or "SCRIPT_COMPLETE: no output"
+
+            output = result.stdout.strip()
             logger.info(f"Script executed: {path}")
-            return f"SCRIPT_SUCCESS:\n{output}"
+
+            # Validate JSON output so agent never sees malformed responses
+            try:
+                json.loads(output)
+                return f"SCRIPT_SUCCESS:\n{output}"
+            except json.JSONDecodeError:
+                return (
+                    f"SCRIPT_FAILED: Script ran but did not print valid JSON.\n"
+                    f"Raw output was:\n{output[:500]}"
+                )
+
         except subprocess.TimeoutExpired:
             return "SCRIPT_FAILED: timed out after 30 seconds"
         except Exception as e:
             return f"SCRIPT_FAILED: {e}"
+
+    def write_transformation_report(self, report: TransformationReport) -> str:
+        """Append transformation report to workspace/logs/transformation_report.json."""
+        report_path = self.logs_dir / "transformation_report.json"
+
+        if report_path.exists():
+            existing = json.loads(report_path.read_text(encoding="utf-8"))
+            if not isinstance(existing, list):
+                existing = [existing]
+        else:
+            existing = []
+
+        existing.append(report.model_dump())
+        report_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+        logger.info(f"Transformation report appended: {report_path} — {report.summary}")
+        return str(report_path)
 
     def write_validation_report(
         self, report: ValidationReport, source_file: str
@@ -239,6 +268,45 @@ class ValidatorTools:
             return _self.write_validated_data(source_path)
 
         @tool
+        def write_transformation_report(
+            source_file: str,
+            output_file: str,
+            total_rows_input: int,
+            total_rows_output: int,
+            quarantined_rows: int,
+            transformations_applied: list[dict],
+            inferred_rules: bool,
+            summary: str,
+        ) -> str:
+            """
+            Write a structured transformation report to workspace/logs/transformation_report.json.
+            Call this after execute_script succeeds for the transformation script.
+            Args:
+                source_file: absolute path to the bronze source file
+                output_file: absolute path to the transformed temp file
+                total_rows_input: total rows in the bronze file
+                total_rows_output: rows written to temp after transformation
+                quarantined_rows: rows sent to quarantine
+                transformations_applied: list of dicts with operation, columns, rows_affected, reason
+                inferred_rules: true if any rules were LLM-inferred rather than user-defined
+                summary: one sentence summary of the transformation outcome
+            """
+            return _self.write_transformation_report(
+                TransformationReport(
+                    source_file=source_file,
+                    output_file=output_file,
+                    total_rows_input=total_rows_input,
+                    total_rows_output=total_rows_output,
+                    quarantined_rows=quarantined_rows,
+                    transformations_applied=[
+                        TransformationEntry(**t) for t in transformations_applied
+                    ],
+                    inferred_rules=inferred_rules,
+                    summary=summary,
+                )
+            )
+
+        @tool
         def write_validation_report(
             status: str,
             row_count: int,
@@ -283,6 +351,7 @@ class ValidatorTools:
             read_sample,
             write_script,
             execute_script,
+            write_transformation_report,
             write_validation_report,
             write_validated_data,
         ]
