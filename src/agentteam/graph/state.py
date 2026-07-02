@@ -80,6 +80,19 @@ class GraphState(AgentState):
     ]  # list of file paths from retrieval
     silver_layer: Annotated[list[str], lambda x, y: y]  # list of validated file paths
 
+    # Quanrantine layer
+    quarantine_layer: Annotated[
+        list[str], lambda x, y: y
+    ]  # list of quarantined file paths
+    repair_target: Annotated[
+        str | None, lambda x, y: y
+    ]  # which agent's script failed: "retrieval" or "validation"
+    repair_error: Annotated[
+        str | None, lambda x, y: y
+    ]  # exact error message from failed script execution
+    # Repair Agent cap
+    repair_attempts: Annotated[int, lambda x, y: y]  # always replace with latest value
+
     # Error handling
     errors: Annotated[list[str], operator.add]
 

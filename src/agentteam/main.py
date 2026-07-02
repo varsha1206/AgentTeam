@@ -61,6 +61,7 @@ def create_workspace() -> Path:
         "generated",
         "output/bronze",
         "output/silver",
+        "output/quarantine",
         "logs",
         "temp",
     ]
@@ -156,6 +157,10 @@ def main():
         "retrieved_data": {},
         "validated_data": {},
         "repaired_data": {},
+        "quarantine_layer": [],
+        "repair_target": None,
+        "repair_error": None,
+        "repair_attempts": 0,
         "errors": [],
         "artifacts": {},
         "metadata": {

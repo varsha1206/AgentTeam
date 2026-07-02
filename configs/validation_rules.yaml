@@ -1,0 +1,89 @@
+global_rules:
+  transformations:
+    - operation: rename_to_snake_case
+    - operation: coerce_numeric
+      columns:
+        - salary
+        - tenure
+        - n_projects
+        - avg_monthly_hrs
+        - satisfaction
+        - last_evaluation
+    - operation: quarantine_missing
+    - operation: quarantine_duplicates
+    - operation: quarantine_type_mismatch
+
+rules:
+  employee_data.csv:
+    schema:
+
+      status:
+        type: str
+        nullable: false
+
+      department:
+        type: str
+        nullable: false
+
+      salary:
+        type: float
+        nullable: false
+        min: 0
+
+      tenure:
+        type: float
+        nullable: false
+        min: 0
+        max: 50
+
+      recently_promoted:
+        type: bool
+        nullable: false
+
+      n_projects:
+        type: int
+        nullable: false
+        min: 0
+        max: 30
+
+      avg_monthly_hrs:
+        type: float
+        nullable: false
+        min: 0
+        max: 400
+
+      satisfaction:
+        type: float
+        nullable: false
+        min: 0
+        max: 1
+
+      last_evaluation:
+        type: float
+        nullable: false
+        min: 0
+        max: 1
+
+      filed_complaint:
+        type: bool
+        nullable: false
+
+    transformations:
+      - operation: rename_to_snake_case
+
+      - operation: coerce_numeric
+        columns:
+          - salary
+          - tenure
+          - n_projects
+          - avg_monthly_hrs
+          - satisfaction
+          - last_evaluation
+
+      - operation: quarantine_missing
+
+      - operation: quarantine_duplicates
+
+      - operation: quarantine_type_mismatch
+
+    inferred: false

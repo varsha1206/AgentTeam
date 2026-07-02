@@ -6,12 +6,14 @@ Responsible for reading output data, generating validation scripts,
 executing them, and writing structured reports.
 """
 
+import io
 import json
 import logging
 import subprocess
 from pathlib import Path
 
 import pandas as pd
+import yaml
 from langchain.tools import tool
 
 from agentteam.models.structured_outputs import GeneratedScript, ValidationReport
@@ -26,12 +28,20 @@ class ValidatorTools:
     """
 
     def __init__(
-        self, bronze_dir: Path, silver_dir: Path, generated_dir: Path, logs_dir: Path
+        self,
+        bronze_dir: Path,
+        silver_dir: Path,
+        quarantine_dir: Path,
+        generated_dir: Path,
+        logs_dir: Path,
+        rules_path: Path,
     ):
         self.bronze_dir = bronze_dir
         self.silver_dir = silver_dir
+        self.quarantine_dir = quarantine_dir
         self.generated_dir = generated_dir
         self.logs_dir = logs_dir
+        self.rules_path = rules_path
         self._validate_dirs()
 
     # -----------------------------
@@ -44,6 +54,7 @@ class ValidatorTools:
             self.silver_dir,
             self.generated_dir,
             self.logs_dir,
+            self.quarantine_dir,
         ]:
             if not path.exists():
                 raise FileNotFoundError(f"Required directory not found at {path}")
@@ -134,6 +145,51 @@ class ValidatorTools:
         )
         return str(report_path)
 
+    def load_validation_rules(self, filename: str) -> str:
+        """Load and return validation rules for a specific file as a JSON string."""
+        if not self.rules_path.exists():
+            return json.dumps(
+                {
+                    "filename": filename,
+                    "user_defined": False,
+                    "global_rules": {},
+                    "file_rules": None,
+                    "message": "No validation_rules.yaml found. Infer all rules from data sample.",
+                }
+            )
+        rules = yaml.safe_load(self.rules_path.read_text(encoding="utf-8"))
+        global_rules = rules.get("global_rules", {})
+        file_rules = rules.get("rules", {}).get(filename, None)
+        return json.dumps(
+            {
+                "filename": filename,
+                "user_defined": file_rules is not None,
+                "global_rules": global_rules,
+                "file_rules": file_rules,
+                "message": (
+                    "Apply file_rules overrides on top of global_rules. "
+                    "Infer any schema details not specified."
+                    if file_rules
+                    else "No file-specific rules. Apply global_rules and infer schema from sample."
+                ),
+            },
+            indent=2,
+        )
+
+    def write_quarantine(self, source_path: str, quarantine_data: str) -> str:
+        """Write quarantined rows with quarantine_reason column to workspace/output/quarantine/."""
+        src_name = Path(source_path).name
+        out_path = self.quarantine_dir / src_name
+        try:
+            df = pd.read_csv(io.StringIO(quarantine_data))
+            if "quarantine_reason" not in df.columns:
+                return "ERROR: quarantine_data must contain a quarantine_reason column"
+            df.to_csv(out_path, index=False, encoding="utf-8")
+            logger.info(f"Quarantine data written: {out_path} — {len(df)} rows")
+            return str(out_path)
+        except Exception as e:
+            return f"ERROR writing quarantine data: {e}"
+
     # -----------------------------
     # LangChain tool bindings
     # -----------------------------
@@ -216,10 +272,33 @@ class ValidatorTools:
                 source_file=source_file,
             )
 
+        @tool
+        def load_validation_rules(filename: str) -> str:
+            """
+            Load validation rules for a specific file from validation_rules.yaml.
+            Call this before read_sample to get the rules to apply.
+            Args:
+                filename: just the filename e.g. 'sample.csv', not the full path
+            """
+            return _self.load_validation_rules(filename)
+
+        @tool
+        def write_quarantine(source_path: str, quarantine_data: str) -> str:
+            """
+            Write quarantined rows to workspace/output/quarantine/.
+            The quarantine_data must be a CSV string with a quarantine_reason column added.
+            Args:
+                source_path: absolute path to the original bronze file being validated
+                quarantine_data: CSV string of bad rows with quarantine_reason column
+            """
+            return _self.write_quarantine(source_path, quarantine_data)
+
         return [
             read_sample,
             write_script,
             execute_script,
             write_validation_report,
             write_validated_data,
+            load_validation_rules,
+            write_quarantine,
         ]
