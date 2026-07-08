@@ -280,3 +280,13 @@ class RepairResult(BaseModel):
         default_factory=list, description="Any errors encountered during repair."
     )
     summary: str = Field(description="One sentence summary of what was repaired.")
+
+
+class RulesCache(BaseModel):
+    """Resolved FileValidationRules written to temp/ for use by the executor."""
+
+    filename: str = Field(description="The filename these rules apply to.")
+    rules: FileValidationRules = Field(description="The complete resolved rules.")
+    source: Literal["user_defined", "llm_inferred", "hybrid"] = Field(
+        description="Whether rules came from YAML, LLM inference, or both."
+    )
