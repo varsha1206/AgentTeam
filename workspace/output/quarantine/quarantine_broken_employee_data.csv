@@ -1,0 +1,5 @@
+id,name,age,salary,department,quarantine_reason
+2,Bob,abc,60000.0,HR,Age is not numeric
+3,,25,70000.0,Eng,"Missing required field (id, name, or department)"
+4,Diana,28,-999.0,Sales,Salary is negative or missing
+6,Eve,,,,"Missing required field (id, name, or department)"

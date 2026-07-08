@@ -1,0 +1,47 @@
+[
+  {
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\broken_employee_data.csv",
+    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_broken_employee_data.csv",
+    "total_rows_input": 6,
+    "total_rows_output": 2,
+    "quarantined_rows": 4,
+    "transformations_applied": [
+      {
+        "operation": "Remove rows with missing required fields",
+        "columns": [
+          "id",
+          "name",
+          "department"
+        ],
+        "rows_affected": 2,
+        "reason": "Null or missing values in id, name, or department"
+      },
+      {
+        "operation": "Remove rows with invalid age",
+        "columns": [
+          "age"
+        ],
+        "rows_affected": 1,
+        "reason": "Age value not numeric or missing"
+      },
+      {
+        "operation": "Remove rows with negative or missing salary",
+        "columns": [
+          "salary"
+        ],
+        "rows_affected": 1,
+        "reason": "Salary value is negative or missing"
+      },
+      {
+        "operation": "Convert age to integer",
+        "columns": [
+          "age"
+        ],
+        "rows_affected": 2,
+        "reason": "Cast age from string to integer type"
+      }
+    ],
+    "inferred_rules": true,
+    "summary": "Transformation of broken_employee_data.csv completed with 2 valid rows kept and 4 rows quarantined due to missing required fields, invalid age values, and negative salary values."
+  }
+]

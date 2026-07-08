@@ -169,6 +169,7 @@ def main():
             "run_id": "test-run-001",
             "environment": "local",
         },
+        "repair_script_path": None,
     }
 
     # -----------------------------

@@ -1,0 +1,10 @@
+[
+  {
+    "status": "PASS",
+    "row_count": 2,
+    "column_count": 5,
+    "errors": [],
+    "summary": "Validation of transformed_broken_employee_data.csv passed successfully with 2 valid rows and 5 columns meeting all schema and constraint requirements.",
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\broken_employee_data.csv"
+  }
+]

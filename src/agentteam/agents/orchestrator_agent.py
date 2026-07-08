@@ -14,12 +14,13 @@ from langgraph.graph import END, StateGraph
 from omegaconf import DictConfig
 
 from agentteam.graph.state import GraphState
+from agentteam.nodes.repair_node import RepairNode, RepairRouter
 from agentteam.nodes.retrieval_node import RetrievalNode, RetrievalRouter
 from agentteam.nodes.validation_node import ValidationNode, ValidationRouter
 
 logger = logging.getLogger(__name__)
 
-PHASE = 2
+PHASE = 3
 
 
 class Orchestrator:
@@ -55,19 +56,22 @@ class Orchestrator:
     def _build_app(self):
         retrieval = RetrievalNode(self.llm_model, self.workspace)
         validation = ValidationNode(self.llm_model, self.workspace)
+        repair = RepairNode(self.llm_model, self.workspace)
         retrieval_router = RetrievalRouter(self.llm_model, self.cfg.routing_prompt)
         validation_router = ValidationRouter(self.llm_model, self.cfg.routing_prompt)
+        repair_router = RepairRouter(self.llm_model, self.cfg.routing_prompt)
 
         graph = StateGraph(GraphState)
         graph.add_node("retrieval_agent", retrieval.as_node())
         graph.add_node("validation_agent", validation.as_node())
+        graph.add_node("repair_agent", repair.as_node())
         graph.set_entry_point("retrieval_agent")
         graph.add_conditional_edges(
             "retrieval_agent",
             retrieval_router.route,
             {
-                "validation_agent": "validation_agent" if PHASE >= 2 else END,
-                "repair_agent": "repair_agent" if PHASE >= 3 else END,
+                "validation_agent": "validation_agent",
+                "repair_agent": "repair_agent",
                 "end": END,
             },
         )
@@ -75,7 +79,15 @@ class Orchestrator:
             "validation_agent",
             validation_router.route,
             {
-                "repair_agent": "repair_agent" if PHASE >= 3 else END,
+                "repair_agent": "repair_agent",
+                "end": END,
+            },
+        )
+        graph.add_conditional_edges(
+            "repair_agent",
+            repair_router.route,
+            {
+                "validation_agent": "validation_agent",
                 "end": END,
             },
         )
