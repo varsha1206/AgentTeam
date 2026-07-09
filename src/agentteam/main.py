@@ -8,6 +8,7 @@ from pathlib import Path
 import colorlog
 
 from agentteam.agents.orchestrator_agent import Orchestrator
+from agentteam.utils.plugin_registry import PluginRegistry
 
 
 def setup_logging():
@@ -127,7 +128,8 @@ def log_final_state(result: dict) -> None:
 
 def main():
     workspace_path = get_project_root() / "workspace"
-
+    registry = PluginRegistry(workspace_path / "plugins")
+    registry.load_all()
     if not workspace_path.exists():
         raise FileNotFoundError(f"Workspace not found at {workspace_path}")
 

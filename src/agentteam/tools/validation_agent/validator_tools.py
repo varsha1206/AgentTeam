@@ -1,9 +1,7 @@
-# src/agentteam/tools/validator_agent/validator_tools.py
-
 """
 Tools for the Validator Agent.
-Responsible for reading output data, generating validation scripts,
-executing them, and writing structured reports.
+Responsible for reading output data, planning and executing transformations,
+generating validation scripts, and writing structured reports.
 """
 
 import json
@@ -24,6 +22,8 @@ from agentteam.models.structured_outputs import (
     TransformationRule,
     ValidationReport,
 )
+from agentteam.utils.execution_planner import ExecutionPlanner
+from agentteam.utils.plugin_registry import PluginRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,7 @@ class ValidatorTools:
         logs_dir: Path,
         rules_path: Path,
         temp_dir: Path,
+        plugins_dir: Path,
     ):
         self.bronze_dir = bronze_dir
         self.silver_dir = silver_dir
@@ -51,11 +52,10 @@ class ValidatorTools:
         self.logs_dir = logs_dir
         self.temp_dir = temp_dir
         self.rules_path = rules_path
+        self.plugin_registry = PluginRegistry(plugins_dir)
+        self.planner = ExecutionPlanner(self.plugin_registry)
         self._validate_dirs()
-
-    # -----------------------------
-    # Validation
-    # -----------------------------
+        self.plugin_registry.load_all()
 
     def _validate_dirs(self) -> None:
         for path in [
@@ -69,9 +69,6 @@ class ValidatorTools:
             if not path.exists():
                 raise FileNotFoundError(f"Required directory not found at {path}")
 
-    # -----------------------------
-    # Tools
-    # -----------------------------
     def read_sample(self, file_path: str) -> str:
         """Read first 20 rows of a CSV for schema inference."""
         path = Path(file_path)
@@ -89,101 +86,8 @@ class ValidatorTools:
         except Exception as e:
             return f"ERROR reading sample from {path}: {e}"
 
-    def write_script(self, script: GeneratedScript) -> str:
-        """Save a generated validation script to workspace/generated/."""
-        script_path = self.generated_dir / script.filename
-        script_path.parent.mkdir(parents=True, exist_ok=True)
-        script_path.write_text(script.code, encoding="utf-8")
-        logger.info(f"Validation script written: {script_path} — {script.description}")
-        return str(script_path)
-
-    def write_validated_data(self, source_path: str) -> str:
-        """Promote a validated transformed file from temp to silver."""
-        src = Path(source_path)
-        if not src.exists():
-            return f"ERROR: Source file not found at {src}"
-        df = pd.read_csv(src)
-        out_path = self.silver_dir / src.name.replace("transformed_", "")
-        df.to_csv(out_path, index=False, encoding="utf-8")
-        logger.info(f"Validated data written: {out_path}")
-        return str(out_path)
-
-    def execute_script(self, script_path: str) -> str:
-        path = Path(script_path)
-        if not path.exists():
-            return "SCRIPT_FAILED: Script not found"
-        try:
-            result = subprocess.run(
-                ["python", str(path)],
-                capture_output=True,
-                text=True,
-                timeout=30,
-                encoding="utf-8",
-            )
-            if result.returncode != 0:
-                logger.error(f"Script failed: {result.stderr}")
-                return f"SCRIPT_FAILED (exit {result.returncode}):\n{result.stderr}"
-
-            output = result.stdout.strip()
-            logger.info(f"Script executed: {path}")
-
-            # Validate JSON output so agent never sees malformed responses
-            try:
-                json.loads(output)
-                return f"SCRIPT_SUCCESS:\n{output}"
-            except json.JSONDecodeError:
-                return (
-                    f"SCRIPT_FAILED: Script ran but did not print valid JSON.\n"
-                    f"Raw output was:\n{output[:500]}"
-                )
-
-        except subprocess.TimeoutExpired:
-            return "SCRIPT_FAILED: timed out after 30 seconds"
-        except Exception as e:
-            return f"SCRIPT_FAILED: {e}"
-
-    def write_transformation_report(self, report: TransformationReport) -> str:
-        """Append transformation report to workspace/logs/transformation_report.json."""
-        report_path = self.logs_dir / "transformation_report.json"
-
-        if report_path.exists():
-            existing = json.loads(report_path.read_text(encoding="utf-8"))
-            if not isinstance(existing, list):
-                existing = [existing]
-        else:
-            existing = []
-
-        existing.append(report.model_dump())
-        report_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
-        logger.info(f"Transformation report appended: {report_path} — {report.summary}")
-        return str(report_path)
-
-    def write_validation_report(
-        self, report: ValidationReport, source_file: str
-    ) -> str:
-        """Append structured validation report to workspace/logs/validation_report.json."""
-        report_path = self.logs_dir / "validation_report.json"
-
-        if report_path.exists():
-            existing_data = json.loads(report_path.read_text(encoding="utf-8"))
-            if not isinstance(existing_data, list):
-                existing_data = [existing_data]
-        else:
-            existing_data = []
-
-        entry = report.model_dump()
-        entry["source_file"] = source_file
-
-        existing_data.append(entry)
-
-        report_path.write_text(json.dumps(existing_data, indent=2), encoding="utf-8")
-        logger.info(
-            f"Validation report appended: {report_path} — {report.status} for {source_file}"
-        )
-        return str(report_path)
-
     def load_validation_rules(self, filename: str) -> str:
-        """Load validation rules for a file. Returns a FileValidationRules JSON object."""
+        """Load validation rules and return as FileValidationRules JSON."""
         if not self.rules_path.exists():
             return FileValidationRules(
                 filename=filename,
@@ -215,29 +119,233 @@ class ValidatorTools:
             inferred=not bool(file_schema),
         ).model_dump_json(indent=2)
 
-    # -----------------------------
-    # LangChain tool bindings
-    # -----------------------------
+    def get_execution_plan(self, rules_json: str) -> str:
+        """
+        Produce an execution plan from FileValidationRules.
+        Returns plan summary JSON including which operations need plugin generation.
+        """
+        rules = FileValidationRules.model_validate_json(rules_json)
+        plan = self.planner.plan(rules)
+        summary = plan.summary()
+        logger.info(f"Execution plan: {summary}")
+        return json.dumps(summary, indent=2)
+
+    def generate_plugin(self, operation: str, code: str) -> str:
+        """
+        Save a LLM-generated plugin to workspace/plugins/ and register it.
+        Args:
+            operation: the operation name e.g. 'normalize_phone_numbers'
+            code: complete plugin function as plain Python string
+        """
+        path = self.plugin_registry.save(operation, code)
+        logger.info(f"Plugin generated and registered: {operation} at {path}")
+        return str(path)
+
+    def run_transformation(
+        self, rules_json: str, source_path: str, filename: str
+    ) -> str:
+        """
+        Run the full transformation pipeline against a bronze file.
+        Uses ExecutionPlanner: built-ins via RuleExecutor, plugins via PluginRegistry.
+        Writes transformed data to temp/transformed_<filename>.csv.
+        Returns JSON: {transformed_path, total_rows, operations_applied, skipped_operations}
+        """
+        rules = FileValidationRules.model_validate_json(rules_json)
+        plan = self.planner.plan(rules)
+
+        if not plan.is_fully_ready:
+            pending = [s.rule.operation for s in plan.pending_steps]
+            return json.dumps(
+                {
+                    "error": "NEEDS_PLUGINS",
+                    "pending_operations": pending,
+                    "message": f"Generate plugins for these operations first: {pending}",
+                }
+            )
+
+        try:
+            df = pd.read_csv(source_path)
+            total_rows = len(df)
+            df = self.planner.execute(df, plan)
+
+            out_path = self.temp_dir / f"transformed_{filename}"
+            df.to_csv(out_path, index=False, encoding="utf-8")
+
+            applied = [s.rule.operation for s in plan.ready_steps]
+            logger.info(f"Transformation complete: {len(df)} rows → {out_path}")
+
+            return json.dumps(
+                {
+                    "transformed_path": str(out_path),
+                    "total_rows": total_rows,
+                    "output_rows": len(df),
+                    "operations_applied": applied,
+                    "skipped_operations": [],
+                }
+            )
+        except Exception as e:
+            logger.error(f"Transformation failed: {e}")
+            return json.dumps({"error": str(e)})
+
+    def write_script(self, script: GeneratedScript) -> str:
+        """Save a generated validation script to workspace/generated/."""
+        script_path = self.generated_dir / script.filename
+        script_path.parent.mkdir(parents=True, exist_ok=True)
+        script_path.write_text(script.code, encoding="utf-8")
+        logger.info(f"Validation script written: {script_path} — {script.description}")
+        return str(script_path)
+
+    def execute_script(self, script_path: str) -> str:
+        """Execute a validation script and return its output."""
+        path = Path(script_path)
+        if not path.exists():
+            return "SCRIPT_FAILED: Script not found"
+        try:
+            result = subprocess.run(
+                ["python", str(path)],
+                capture_output=True,
+                text=True,
+                timeout=30,
+                encoding="utf-8",
+            )
+            if result.returncode != 0:
+                logger.error(f"Script failed: {result.stderr}")
+                return f"SCRIPT_FAILED (exit {result.returncode}):\n{result.stderr}"
+
+            output = result.stdout.strip()
+            logger.info(f"Script executed: {path}")
+
+            try:
+                json.loads(output)
+                return f"SCRIPT_SUCCESS:\n{output}"
+            except json.JSONDecodeError:
+                return (
+                    f"SCRIPT_FAILED: Script ran but did not print valid JSON.\n"
+                    f"Raw output was:\n{output[:500]}"
+                )
+
+        except subprocess.TimeoutExpired:
+            return "SCRIPT_FAILED: timed out after 30 seconds"
+        except Exception as e:
+            return f"SCRIPT_FAILED: {e}"
+
+    def write_validated_data(self, source_path: str) -> str:
+        """Promote a validated transformed file from temp to silver."""
+        src = Path(source_path)
+        if not src.exists():
+            return f"ERROR: Source file not found at {src}"
+        df = pd.read_csv(src, encoding="utf-8")
+        out_path = self.silver_dir / src.name.replace("transformed_", "")
+        df.to_csv(out_path, index=False, encoding="utf-8")
+        logger.info(f"Promoted to silver: {out_path}")
+        return str(out_path)
+
+    def write_transformation_report(self, report: TransformationReport) -> str:
+        """Append transformation report to workspace/logs/transformation_report.json."""
+        report_path = self.logs_dir / "transformation_report.json"
+
+        if report_path.exists():
+            existing = json.loads(report_path.read_text(encoding="utf-8"))
+            if not isinstance(existing, list):
+                existing = [existing]
+        else:
+            existing = []
+
+        existing.append(report.model_dump())
+        report_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+        logger.info(f"Transformation report appended: {report_path} — {report.summary}")
+        return str(report_path)
+
+    def write_validation_report(
+        self, report: ValidationReport, source_file: str
+    ) -> str:
+        """Append structured validation report to workspace/logs/validation_report.json."""
+        report_path = self.logs_dir / "validation_report.json"
+
+        if report_path.exists():
+            existing = json.loads(report_path.read_text(encoding="utf-8"))
+            if not isinstance(existing, list):
+                existing = [existing]
+        else:
+            existing = []
+
+        entry = report.model_dump()
+        entry["source_file"] = source_file
+        existing.append(entry)
+
+        report_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+        logger.info(
+            f"Validation report appended: {report_path} — {report.status} for {source_file}"
+        )
+        return str(report_path)
 
     def as_tools(self) -> list:
         _self = self
+
+        @tool
+        def load_validation_rules(filename: str) -> str:
+            """
+            Load validation rules for a file. Returns a FileValidationRules JSON object.
+            Call this first before read_sample.
+            Args:
+                filename: just the filename e.g. 'sample.csv'
+            """
+            return _self.load_validation_rules(filename)
 
         @tool
         def read_sample(file_path: str) -> str:
             """
             Read the first 20 rows of a CSV file for schema inference.
             Args:
-                file_path: absolute path as returned by list_output_files
+                file_path: absolute path to the bronze file
             """
             return _self.read_sample(file_path)
+
+        @tool
+        def get_execution_plan(rules_json: str) -> str:
+            """
+            Get the execution plan for a set of FileValidationRules.
+            Returns which operations are built-in, which are plugins, and which need generation.
+            Call this after producing the complete FileValidationRules.
+            Args:
+                rules_json: complete FileValidationRules as a JSON string
+            """
+            return _self.get_execution_plan(rules_json)
+
+        @tool
+        def generate_plugin(operation: str, code: str) -> str:
+            """
+            Save a generated plugin function to workspace/plugins/ and register it.
+            Only call this for operations listed as needs_generation in the execution plan.
+            The function must be named exactly the same as the operation.
+            Args:
+                operation: operation name e.g. 'normalize_phone_numbers'
+                code: complete plugin function, plain Python, no markdown, no backticks
+                      must define: def <operation>(df: pd.DataFrame, rule) -> pd.DataFrame
+            """
+            return _self.generate_plugin(operation, code)
+
+        @tool
+        def run_transformation(rules_json: str, source_path: str, filename: str) -> str:
+            """
+            Run the full transformation pipeline against a bronze file.
+            Returns JSON: {transformed_path, total_rows, output_rows, operations_applied}
+            If any operations need plugin generation first, returns {error: NEEDS_PLUGINS, pending_operations: [...]}
+            Args:
+                rules_json: complete FileValidationRules as a JSON string
+                source_path: absolute path to the bronze file
+                filename: just the filename e.g. 'employee_data.csv'
+            """
+            return _self.run_transformation(rules_json, source_path, filename)
 
         @tool
         def write_script(filename: str, code: str, description: str) -> str:
             """
             Save a generated validation script to the generated directory.
+            Use this for validation scripts only — not transformation.
             Args:
-                filename: e.g. 'validation_001.py'
-                code: complete Python script as plain string, no markdown, no backticks
+                filename: e.g. 'validation_employee_data.py'
+                code: complete Python script, plain string, no markdown, no backticks
                 description: one sentence describing what this script validates
             """
             return _self.write_script(
@@ -252,20 +360,11 @@ class ValidatorTools:
         def execute_script(script_path: str) -> str:
             """
             Execute a validation script and return its output.
+            Returns SCRIPT_SUCCESS or SCRIPT_FAILED.
             Args:
                 script_path: absolute path returned by write_script
             """
             return _self.execute_script(script_path)
-
-        @tool
-        def write_validated_data(source_path: str) -> str:
-            """
-            Copy the validated CSV to workspace/output/validated_data.csv.
-            Only call this when validation status is PASS.
-            Args:
-                source_path: absolute path to the validated CSV file
-            """
-            return _self.write_validated_data(source_path)
 
         @tool
         def write_transformation_report(
@@ -280,16 +379,15 @@ class ValidatorTools:
         ) -> str:
             """
             Write a structured transformation report to workspace/logs/transformation_report.json.
-            Call this after execute_script succeeds for the transformation script.
             Args:
                 source_file: absolute path to the bronze source file
                 output_file: absolute path to the transformed temp file
                 total_rows_input: total rows in the bronze file
-                total_rows_output: rows written to temp after transformation
-                quarantined_rows: rows sent to quarantine
+                total_rows_output: rows in temp after transformation
+                quarantined_rows: rows sent to quarantine (0 at this stage)
                 transformations_applied: list of dicts with operation, columns, rows_affected, reason
-                inferred_rules: true if any rules were LLM-inferred rather than user-defined
-                summary: one sentence summary of the transformation outcome
+                inferred_rules: true if any rules were LLM-inferred
+                summary: one sentence summary
             """
             return _self.write_transformation_report(
                 TransformationReport(
@@ -316,14 +414,14 @@ class ValidatorTools:
             source_file: str,
         ) -> str:
             """
-            Append the validation report for this file to workspace/logs/validation_report.json.
+            Append the validation report to workspace/logs/validation_report.json.
             Args:
                 status: 'PASS' or 'FAIL'
-                row_count: total number of rows in the dataset
-                column_count: total number of columns in the dataset
-                errors: list of validation errors found, empty if PASS
-                summary: one sentence summary of the result
-                source_file: the absolute path of the file that was validated
+                row_count: valid rows promoted to silver
+                column_count: number of columns
+                errors: list of validation errors, empty if PASS
+                summary: one sentence summary
+                source_file: absolute path to the bronze file
             """
             return _self.write_validation_report(
                 ValidationReport(
@@ -337,18 +435,21 @@ class ValidatorTools:
             )
 
         @tool
-        def load_validation_rules(filename: str) -> str:
+        def write_validated_data(source_path: str) -> str:
             """
-            Load validation rules for a file. Returns a FileValidationRules JSON object.
-            Call this first before read_sample.
+            Promote a validated file from temp to silver.
+            Only call this when validation status is PASS.
             Args:
-                 filename: just the filename e.g. 'sample.csv'
+                source_path: absolute path to the temp transformed file
             """
-            return _self.load_validation_rules(filename)
+            return _self.write_validated_data(source_path)
 
         return [
             load_validation_rules,
             read_sample,
+            get_execution_plan,
+            generate_plugin,
+            run_transformation,
             write_script,
             execute_script,
             write_transformation_report,

@@ -1,7 +1,0 @@
-id,name,age,salary,department
-1,Alice,0,50000.0,Eng
-2,Bob,0,60000.0,HR
-3,Unknown,25,70000.0,Eng
-4,Diana,28,0.0,Sales
-1,Alice,30,0.0,Eng
-6,Eve,0,0.0,Unassigned

@@ -4,4 +4,4 @@ id,name,age,salary,department
 3,,25,70000.0,Eng
 4,Diana,28,-999.0,Sales
 1,Alice,30,five thousand,Eng
-6,Eve,,,
+6,Eve,45,67488,IT
