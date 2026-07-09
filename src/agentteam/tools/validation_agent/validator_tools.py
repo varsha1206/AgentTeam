@@ -415,7 +415,7 @@ class ValidatorTools:
             status: str,
             row_count: int,
             column_count: int,
-            errors: list[str],
+            validation_violations: list[str],
             summary: str,
             source_file: str,
         ) -> str:
@@ -425,7 +425,7 @@ class ValidatorTools:
                 status: 'PASS' or 'FAIL'
                 row_count: valid rows promoted to silver
                 column_count: number of columns
-                errors: list of validation errors, empty if PASS
+                validation_violations: list of validation errors, empty if PASS
                 summary: one sentence summary
                 source_file: absolute path to the bronze file
             """
@@ -434,21 +434,11 @@ class ValidatorTools:
                     status=status,
                     row_count=row_count,
                     column_count=column_count,
-                    errors=errors,
+                    validation_violations=validation_violations,
                     summary=summary,
                 ),
                 source_file=source_file,
             )
-
-        @tool
-        def write_validated_data(source_path: str) -> str:
-            """
-            Promote a validated file from temp to silver.
-            Only call this when validation status is PASS.
-            Args:
-                source_path: absolute path to the temp transformed file
-            """
-            return _self.write_validated_data(source_path)
 
         return [
             load_validation_rules,
@@ -460,5 +450,4 @@ class ValidatorTools:
             execute_script,
             write_transformation_report,
             write_validation_report,
-            write_validated_data,
         ]

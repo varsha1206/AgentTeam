@@ -3,6 +3,7 @@ main.py - Test entrypoint for the AgentTeam pipeline
 """
 
 import logging
+import uuid
 from pathlib import Path
 
 import colorlog
@@ -168,7 +169,7 @@ def main():
         "errors": [],
         "artifacts": {},
         "metadata": {
-            "run_id": "test-run-001",
+            "run_id": str(uuid.uuid4()),
             "environment": "local",
         },
         "repair_script_path": None,

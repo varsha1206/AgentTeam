@@ -1,7 +1,0 @@
-id,employee_name,employee_age,salary,department
-1,Alice,,50000.0,Eng
-2,Bob,,60000.0,HR
-3,,25.0,70000.0,Eng
-4,Diana,28.0,-999.0,Sales
-1,Alice,30.0,,Eng
-6,Eve,45.0,67488.0,IT

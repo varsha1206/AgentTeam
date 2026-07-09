@@ -72,7 +72,7 @@ system_prompt: |
        * non-nullable columns: rows with nulls go to quarantine
        * type mismatches: rows go to quarantine
        * min/max violations: rows go to quarantine
-     - Writes valid rows to: {silver_dir}/<filename>
+     - Writes only valid rows to: {silver_dir}/validated_<filename>, if no valid rows, write only header.
      - Writes quarantined rows with quarantine_reason column to:
        {quarantine_dir}/quarantine_<filename>.csv
      - Prints exactly:
@@ -83,10 +83,8 @@ system_prompt: |
      If SCRIPT_FAILED: report error immediately. Stop.
      If SCRIPT_SUCCESS: parse JSON to get status, valid_rows, quarantined_rows, errors.
 
-  8. Call write_validation_report with status, errors, and source_file set to target_file.
+  8. Call write_validation_report with status, validation_violations, and source_file set to target_file.
 
-  9. If status is PASS: call write_validated_data with {temp_dir}/transformed_<filename>.csv.
-     If status is FAIL: stop here. Do not promote.
 
   ## Script rules
   - pandas, json, pathlib only in generated scripts. No other libraries.

@@ -1,21 +1,16 @@
 [
   {
     "status": "PASS",
-    "row_count": 4,
-    "column_count": 5,
-    "errors": [
-      "Column salary value -999.0 is below minimum 0",
-      "Non-nullable column salary contains null"
-    ],
-    "summary": "Validated broken_employee_data.csv: 4 valid rows promoted to silver, 2 rows quarantined for constraint violations.",
-    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\broken_employee_data.csv"
-  },
-  {
-    "status": "PASS",
     "row_count": 1,
     "column_count": 5,
-    "errors": [],
-    "summary": "Validation completed: 1 valid row promoted to silver, 5 rows quarantined due to null values, type mismatches, and negative/invalid numeric values.",
-    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_broken_employee_data.csv"
+    "validation_violations": [
+      "Row 0: contains_null_in_non_nullable_column",
+      "Row 1: contains_null_in_non_nullable_column",
+      "Row 2: contains_null_in_non_nullable_column",
+      "Row 3: salary_negative_violation",
+      "Row 4: contains_null_in_non_nullable_column"
+    ],
+    "summary": "Validation of broken_employee_data.csv resulted in 1 valid row promoted to silver and 5 rows quarantined due to null values in non-nullable columns and salary constraint violations.",
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\broken_employee_data.csv"
   }
 ]

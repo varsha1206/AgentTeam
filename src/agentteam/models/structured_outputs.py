@@ -19,13 +19,32 @@ class GeneratedScript(BaseModel):
     )
 
 
+class ErrorReport(BaseModel):
+    """Structured output for an error report."""
+
+    error: str | None = Field(
+        default=None,
+        description="A plain string describing the error encountered. No markdown, no backticks. or None if no error occurred.",
+    )
+    stage: Literal[
+        "retrieval", "validation", "repair", "transformation", "no_error"
+    ] = Field(description="The stage of the pipeline where the error occurred.")
+    error_type: (
+        Literal["script_crash", "quarantine_error", "validation_rule_violation"] | None
+    ) = Field(description="The type of error that occurred.")
+    should_repair: bool = Field(
+        default=False,
+        description="Whether the error is likely fixable by the repair agent.",
+    )
+
+
 class ValidationReport(BaseModel):
     status: Literal["PASS", "FAIL"] = Field(
         description="Whether data passed or failed validation."
     )
     row_count: int = Field(description="Total number of rows in the dataset")
     column_count: int = Field(description="Total number of columns in the dataset")
-    errors: list[str] = Field(
+    validation_violations: list[str] = Field(
         default_factory=list, description="List of validation errors found."
     )
     summary: str = Field(description="One sentence summary of the validation result.")
@@ -44,8 +63,9 @@ class RetrievalResult(BaseModel):
     output_path: str | None = Field(
         default=None, description="Absolute path to the output CSV file."
     )
-    errors: list[str] = Field(
-        default_factory=list, description="Any errors encountered during retrieval."
+    errors: list[ErrorReport] = Field(
+        default_factory=list,
+        description="LAny crash errors encountered during retrieval. Not errors in the data itself.",
     )
 
 
@@ -93,7 +113,7 @@ class AgentInstruction(BaseModel):
         default=None,
         description="Absolute path to the script that needs patching. Repair agent only.",
     )
-    errors: list[str] = Field(
+    errors: list[ErrorReport] = Field(
         default_factory=list,
         description="Errors from the previous run that need to be addressed.",
     )
@@ -117,9 +137,15 @@ class ValidatorResult(BaseModel):
     report_path: str | None = Field(
         default=None, description="Absolute path to the validation report JSON file."
     )
-    errors: list[str] = Field(
+    validation_violations: list[str] = Field(
         default_factory=list, description="Validation errors found in the data."
     )
+
+    errors: list[ErrorReport] = Field(
+        default_factory=list,
+        description="Any crash errors encountered during validation. Not errors in the data itself.",
+    )
+
     summary: str = Field(description="One sentence summary of the validation result.")
 
     quarantine_percentage: float | None = Field(
@@ -280,7 +306,7 @@ class RepairResult(BaseModel):
     output_path: str | None = Field(
         default=None, description="Absolute path to the repaired output CSV."
     )
-    errors: list[str] = Field(
+    errors: list[ErrorReport] = Field(
         default_factory=list, description="Any errors encountered during repair."
     )
     summary: str = Field(description="One sentence summary of what was repaired.")

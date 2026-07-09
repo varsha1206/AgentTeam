@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage
 
 from agentteam.agents.repair_agent import repair_agent_app
 from agentteam.graph.state import GraphState
-from agentteam.models.structured_outputs import RepairResult
+from agentteam.models.structured_outputs import ErrorReport, RepairResult
 from agentteam.utils.base_node import BaseAgentNode, BaseRouter
 from agentteam.utils.result_parser import parse_repair_result
 
@@ -20,13 +20,10 @@ class RepairNode(BaseAgentNode):
 
     def build_instructions(self, state: GraphState) -> list[HumanMessage]:
         repair_target = state.get("repair_target")
-        repair_error = state.get("repair_error", "")
+        repair_error = state.get("repair_error", [])
         script_path = state.get("repair_script_path", "")
         bronze_files = state.get("bronze_layer", [])
         filename = Path(bronze_files[0]).name if bronze_files else ""
-
-        if repair_error is None:
-            repair_error = "No errors provided"
 
         task = (
             "repair_transformation"
@@ -38,7 +35,7 @@ class RepairNode(BaseAgentNode):
             self._build_agent_instruction(
                 task=task,
                 script_to_repair=script_path,
-                errors=[repair_error],
+                errors=repair_error,
                 context=f"filename: {filename}",
             )
         ]
@@ -48,12 +45,20 @@ class RepairNode(BaseAgentNode):
 
     def update_state(self, state: GraphState, results: list[RepairResult]) -> dict:
         repair_attempts = state.get("repair_attempts", 0) + 1
+
         result = (
             results[0]
             if results
             else RepairResult(
                 status="failed",
-                errors=["No repair result produced."],
+                errors=[
+                    ErrorReport(
+                        error="Repair produced no result.",
+                        stage="repair",
+                        error_type=None,
+                        should_repair=True,
+                    )
+                ],
                 summary="Repair produced no result.",
             )
         )
@@ -76,7 +81,14 @@ class RepairRouter(BaseRouter):
             if repaired
             else RepairResult(
                 status="failed",
-                errors=["repaired_data was empty."],
+                errors=[
+                    ErrorReport(
+                        error="No repair data found.",
+                        stage="repair",
+                        error_type=None,
+                        should_repair=False,
+                    )
+                ],
                 summary="No repair data found.",
             )
         )

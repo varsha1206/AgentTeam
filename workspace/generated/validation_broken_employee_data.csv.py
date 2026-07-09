@@ -2,88 +2,92 @@ import pandas as pd
 import json
 from pathlib import Path
 
-def main():
-    try:
-        input_path = Path("C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_broken_employee_data.csv")
-        silver_path = Path("C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\silver\\broken_employee_data.csv")
-        quarantine_path = Path("C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\quarantine\\quarantine_broken_employee_data.csv")
+try:
+    temp_file = Path('C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_broken_employee_data.csv')
+    silver_dir = Path('C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\silver')
+    quarantine_dir = Path('C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\quarantine')
+    
+    silver_dir.mkdir(parents=True, exist_ok=True)
+    quarantine_dir.mkdir(parents=True, exist_ok=True)
+    
+    df = pd.read_csv(temp_file)
+    
+    schema = {
+        'id': {'type': 'int', 'nullable': False},
+        'employee_name': {'type': 'str', 'nullable': True},
+        'employee_age': {'type': 'int', 'nullable': False},
+        'salary': {'type': 'float', 'nullable': False},
+        'department': {'type': 'str', 'nullable': False}
+    }
+    
+    valid_rows = []
+    quarantined_rows = []
+    errors = []
+    
+    for idx, row in df.iterrows():
+        row_errors = []
         
-        df = pd.read_csv(input_path)
-        
-        silver_path.parent.mkdir(parents=True, exist_ok=True)
-        quarantine_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        valid_rows = []
-        quarantined_rows = []
-        errors = []
-        
-        for idx, row in df.iterrows():
-            quarantine_reasons = []
+        for col, rules in schema.items():
+            if col not in df.columns:
+                row_errors.append(f"Column {col} missing")
+                continue
             
-            # Check id: must be non-null and numeric
-            if pd.isna(row['id']):
-                quarantine_reasons.append("id is null")
-            elif not isinstance(row['id'], (int, float)) or pd.isna(row['id']):
-                quarantine_reasons.append("id is not numeric")
+            value = row[col]
             
-            # Check employee_name: nullable allowed
-            if pd.isna(row['employee_name']):
-                quarantine_reasons.append("employee_name is null")
-            
-            # Check employee_age: must be positive numeric, allow null for now
-            if not pd.isna(row['employee_age']):
-                if not isinstance(row['employee_age'], (int, float)):
-                    quarantine_reasons.append("employee_age is not numeric")
-                elif row['employee_age'] <= 0:
-                    quarantine_reasons.append("employee_age must be positive")
+            if pd.isna(value):
+                if not rules['nullable']:
+                    row_errors.append(f"Column {col} is non-nullable but has null value")
             else:
-                quarantine_reasons.append("employee_age is null")
-            
-            # Check salary: must be positive numeric, allow null for now
-            if not pd.isna(row['salary']):
-                if not isinstance(row['salary'], (int, float)):
-                    quarantine_reasons.append("salary is not numeric")
-                elif row['salary'] <= 0:
-                    quarantine_reasons.append("salary must be positive")
-            else:
-                quarantine_reasons.append("salary is null")
-            
-            # Check department: must be non-null string
-            if pd.isna(row['department']):
-                quarantine_reasons.append("department is null")
-            
-            if quarantine_reasons:
-                row_with_reason = row.copy()
-                row_with_reason['quarantine_reason'] = "; ".join(quarantine_reasons)
-                quarantined_rows.append(row_with_reason)
-            else:
-                valid_rows.append(row)
+                expected_type = rules['type']
+                if expected_type == 'int':
+                    try:
+                        int(float(value))
+                    except (ValueError, TypeError):
+                        row_errors.append(f"Column {col} value '{value}' cannot be coerced to int")
+                elif expected_type == 'float':
+                    try:
+                        float(value)
+                    except (ValueError, TypeError):
+                        row_errors.append(f"Column {col} value '{value}' cannot be coerced to float")
+                elif expected_type == 'str':
+                    if not isinstance(value, str):
+                        row_errors.append(f"Column {col} expected str but got {type(value).__name__}")
         
-        if valid_rows:
-            valid_df = pd.DataFrame(valid_rows)
-            valid_df.to_csv(silver_path, index=False)
-        
-        if quarantined_rows:
-            quarantine_df = pd.DataFrame(quarantined_rows)
-            quarantine_df.to_csv(quarantine_path, index=False)
-        
-        status = "PASS" if valid_rows else "FAIL"
-        result = {
-            "status": status,
-            "valid_rows": len(valid_rows),
-            "quarantined_rows": len(quarantined_rows),
-            "errors": errors
-        }
-        print(json.dumps(result))
-        
-    except Exception as e:
-        error_result = {
-            "status": "FAIL",
-            "valid_rows": 0,
-            "quarantined_rows": 0,
-            "errors": [str(e)]
-        }
-        print(json.dumps(error_result))
+        if row_errors:
+            row_copy = row.copy()
+            row_copy['quarantine_reason'] = '; '.join(row_errors)
+            quarantined_rows.append(row_copy)
+            errors.append({'row': idx, 'reasons': row_errors})
+        else:
+            valid_rows.append(row)
+    
+    valid_df = pd.DataFrame(valid_rows) if valid_rows else df.iloc[:0]
+    silver_file = silver_dir / 'validated_broken_employee_data.csv'
+    valid_df.to_csv(silver_file, index=False)
+    
+    if quarantined_rows:
+        quarantine_df = pd.DataFrame(quarantined_rows)
+        quarantine_file = quarantine_dir / 'quarantine_broken_employee_data.csv'
+        quarantine_df.to_csv(quarantine_file, index=False)
+    
+    valid_count = len(valid_rows)
+    quarantine_count = len(quarantined_rows)
+    status = 'PASS' if valid_count > 0 else 'FAIL'
+    
+    result = {
+        'status': status,
+        'valid_rows': valid_count,
+        'quarantined_rows': quarantine_count,
+        'errors': errors
+    }
+    
+    print(json.dumps(result))
 
-if __name__ == "__main__":
-    main()
+except Exception as e:
+    error_result = {
+        'status': 'FAIL',
+        'valid_rows': 0,
+        'quarantined_rows': 0,
+        'errors': [{'error': str(e)}]
+    }
+    print(json.dumps(error_result))
