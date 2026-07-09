@@ -25,6 +25,9 @@ class RepairNode(BaseAgentNode):
         bronze_files = state.get("bronze_layer", [])
         filename = Path(bronze_files[0]).name if bronze_files else ""
 
+        if repair_error is None:
+            repair_error = "No errors provided"
+
         task = (
             "repair_transformation"
             if repair_target == "transformation"

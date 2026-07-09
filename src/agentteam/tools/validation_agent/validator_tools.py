@@ -89,6 +89,9 @@ class ValidatorTools:
     def load_validation_rules(self, filename: str) -> str:
         """Load validation rules and return as FileValidationRules JSON."""
         if not self.rules_path.exists():
+            logger.info(
+                f"Rules file not found at {self.rules_path}, returning empty inferred rules for {filename}"
+            )
             return FileValidationRules(
                 filename=filename,
                 schema={},
@@ -111,7 +114,10 @@ class ValidatorTools:
             if file_schema
             else {}
         )
-
+        logger.info(
+            f"Loaded validation rules for {filename}: "
+            f"{len(schema)} columns, {len(transformations)} transformations, inferred={not bool(file_schema)}"
+        )
         return FileValidationRules(
             filename=filename,
             schema=schema,

@@ -218,6 +218,8 @@ class ValidationNode(BaseAgentNode):
                 state_update["repair_error"] = repair_error
                 state_update["repair_script_path"] = repair_script_path
                 logger.info(f"Repair needed — target: {repair_target}")
+            else:
+                logger.info("No repair needed after validation")
 
             return state_update
 

@@ -3,31 +3,26 @@ import json
 from pathlib import Path
 
 try:
-    source_path = "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\input\\broken_employee_data.csv"
-    output_dir = "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze"
-    output_filename = "broken_employee_data.csv"
+    input_path = r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv"
+    bronze_dir = Path(r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze")
+    bronze_dir.mkdir(parents=True, exist_ok=True)
     
-    df = pd.read_csv(source_path)
+    df = pd.read_csv(input_path)
     
-    rows = len(df)
+    num_rows = len(df)
     columns = df.columns.tolist()
-    nulls = df.isnull().sum().to_dict()
+    nulls = {col: int(df[col].isna().sum()) for col in columns}
     
-    metadata = {
-        "rows": rows,
+    output = {
+        "rows": num_rows,
         "columns": columns,
         "nulls": nulls
     }
+    print(json.dumps(output))
     
-    print(json.dumps(metadata))
-    
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    output_path = Path(output_dir) / output_filename
-    df.to_csv(output_path, index=False)
+    output_file = bronze_dir / "broken_employee_data.csv"
+    df.to_csv(output_file, index=False)
     
 except Exception as e:
-    error_output = {
-        "error": str(e),
-        "type": type(e).__name__
-    }
+    error_output = {"error": str(e), "type": type(e).__name__}
     print(json.dumps(error_output))

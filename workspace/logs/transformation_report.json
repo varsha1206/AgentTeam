@@ -1,0 +1,39 @@
+[
+  {
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\broken_employee_data.csv",
+    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_broken_employee_data.csv",
+    "total_rows_input": 6,
+    "total_rows_output": 6,
+    "quarantined_rows": 0,
+    "transformations_applied": [
+      {
+        "operation": "coerce_numeric",
+        "columns": [
+          "salary"
+        ],
+        "rows_affected": 6,
+        "reason": "Convert salary to numeric, handling non-numeric strings"
+      },
+      {
+        "operation": "coerce_numeric",
+        "columns": [
+          "id",
+          "employeeAge"
+        ],
+        "rows_affected": 6,
+        "reason": "Convert id and employeeAge to numeric"
+      },
+      {
+        "operation": "rename_to_snake_case",
+        "columns": [
+          "employeeName",
+          "employeeAge"
+        ],
+        "rows_affected": 6,
+        "reason": "Standardize column names to snake_case"
+      }
+    ],
+    "inferred_rules": true,
+    "summary": "Applied coerce_numeric and rename_to_snake_case transformations to broken_employee_data.csv."
+  }
+]

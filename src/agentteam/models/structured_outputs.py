@@ -122,6 +122,10 @@ class ValidatorResult(BaseModel):
     )
     summary: str = Field(description="One sentence summary of the validation result.")
 
+    quarantine_percentage: float | None = Field(
+        default=None, description="Percentage of rows quarantined during validation."
+    )
+
 
 class RoutingDecision(BaseModel):
     """Structured routing decision after each agent completes."""

@@ -94,7 +94,7 @@ class GraphState(AgentState):
     repair_attempts: Annotated[int, lambda x, y: y]  # always replace with latest value
 
     # Error handling
-    errors: Annotated[list[str], operator.add]
+    errors: Annotated[list[str] | None, operator.add]
 
     # Flexible artifact store
     # (LLM/tool outputs, agent memory, etc.)

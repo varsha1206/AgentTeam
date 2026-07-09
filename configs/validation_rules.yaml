@@ -1,30 +1,38 @@
 broken_employee_data.csv:
-    schema:
-      id:
-        type: int
-        nullable: false
-      name:
-        type: str
-        nullable: false
-      age:
-        type: int
-        nullable: false
-        min: 0
-        max: 150
-      salary:
-        type: float
-        nullable: false
-        min: 55000
-        max: 999999
-      department:
-        type: str
-        nullable: false
-    overrides:
-      transformations:
-        - operation: coerce_numeric
-          columns:
-            - age
-            - salary
-        - operation: quarantine_type_mismatch
-        - operation: quarantine_missing
-        - operation: quarantine_duplicates
+  filename: broken_employee_data.csv
+  inferred: false
+
+  schema:
+    id:
+      type: int
+      nullable: false
+
+    name:
+      type: str
+      nullable: false
+
+    age:
+      type: int
+      nullable: false
+      min: 0
+      max: 150
+
+    salary:
+      type: float
+      nullable: false
+      min: 0
+      max: 999999
+
+    department:
+      type: str
+      nullable: false
+      literal_values:
+        - HR
+        - Sales
+
+  transformations:
+    - operation: coerce_numeric
+      columns:
+        - age
+        - salary
+    - operation: rename_to_snake_case
