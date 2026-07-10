@@ -3,37 +3,29 @@ import json
 from pathlib import Path
 
 try:
-    # Read the CSV file
     source_path = r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv"
+    output_dir = Path(r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
     df = pd.read_csv(source_path)
     
-    # Analyze the data
-    num_rows = len(df)
+    rows = len(df)
     columns = df.columns.tolist()
+    nulls = df.isnull().sum().to_dict()
     
-    # Count nulls per column
-    nulls = {}
-    for col in columns:
-        null_count = df[col].isna().sum()
-        if null_count > 0:
-            nulls[col] = int(null_count)
-    
-    # Print JSON report to stdout
-    report = {
-        "rows": num_rows,
+    result = {
+        "rows": rows,
         "columns": columns,
         "nulls": nulls
     }
-    print(json.dumps(report))
+    print(json.dumps(result))
     
-    # Write raw data to bronze output
-    output_path = r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze\broken_employee_data.csv"
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(output_path, index=False)
+    output_file = output_dir / "broken_employee_data.csv"
+    df.to_csv(output_file, index=False)
     
 except Exception as e:
-    error_report = {
+    error_result = {
         "error": str(e),
         "type": type(e).__name__
     }
-    print(json.dumps(error_report))
+    print(json.dumps(error_result))

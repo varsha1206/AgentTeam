@@ -1,6 +1,7 @@
 id,employeeName,employeeAge,salary,department,unique_employee_id,quarantine_reason
-1,Alice,,50000.0,Eng,2611315527f0,employeeAge is null but not nullable
-2,Bob,,60000.0,HR,ec686fff3097,employeeAge is null but not nullable
-3,,25.0,70000.0,Eng,fc75b183030d,employeeName is null but not nullable
-4,Diana,28.0,-999.0,Sales,83aa6a5ffddc,salary value -999.0 below minimum 0.0
-1,Alice,30.0,,Eng,0df92b3124f0,salary is null but not nullable
+1,Alice,,50000.0,Eng,2611315527f0,employee_name is required and cannot be empty; employee_age is required
+2,Bob,abc,60000.0,HR,2181ac94bad0,employee_name is required and cannot be empty; employee_age is required
+3,,25,70000.0,Eng,ba91e03671a0,employee_name is required and cannot be empty; employee_age is required
+4,Diana,28,-999.0,Sales,2fe1141d297f,employee_name is required and cannot be empty; employee_age is required; salary -999.0 cannot be negative
+1,Alice,30,five thousand,Eng,89bd9aa773dd,employee_name is required and cannot be empty; employee_age is required; salary cannot be converted to float: five thousand
+6,,45,67488,IT,19a4c10228dc,employee_name is required and cannot be empty; employee_age is required

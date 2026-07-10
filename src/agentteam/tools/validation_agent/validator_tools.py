@@ -211,7 +211,6 @@ class ValidatorTools:
         Returns JSON: {transformed_path, total_rows, operations_applied, skipped_operations}
         """
         rules = FileValidationRules.model_validate_json(rules_json)
-        print("Run transformation with rules:", rules)
         plan = self.planner.plan(rules)
 
         if not plan.is_fully_ready:
