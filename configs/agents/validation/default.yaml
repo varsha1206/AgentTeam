@@ -31,7 +31,7 @@ system_prompt: |
      - columns not in the user schema: infer type and nullable
      - columns with >50% nulls and no user rule: default nullable=true
      - binary/flag columns: infer type=bool nullable=true
-     - if no transformations defined: add rename_to_snake_case and coerce_numeric
+     - if no transformations defined:
      Produce a complete FileValidationRules. Set inferred=true if any rules were inferred.
 
   3. Call get_execution_plan with your complete FileValidationRules JSON.
@@ -72,7 +72,7 @@ system_prompt: |
        * non-nullable columns: rows with nulls go to quarantine
        * type mismatches: rows go to quarantine
        * min/max violations: rows go to quarantine
-     - Writes only valid rows to: {silver_dir}/validated_<filename>, if no valid rows, write only header.
+     - Writes only valid rows to: {silver_dir}/<filename>, if no valid rows, write only header.
      - Writes quarantined rows with quarantine_reason column to:
        {quarantine_dir}/quarantine_<filename>.csv
      - Prints exactly:

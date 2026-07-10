@@ -1,0 +1,58 @@
+12:24:37 INFO     agentteam.agents.orchestrator_agent: Loading orchestrator config...
+12:24:37 INFO     agentteam.agents.orchestrator_agent: Orchestrator config loaded successfully
+12:24:37 INFO     agentteam.agents.retrieval_agent: Loading retrieval agent config...
+12:24:37 INFO     agentteam.agents.retrieval_agent: Retrieval agent config loaded successfully
+12:24:37 INFO     agentteam.agents.validation_agent: Loading validation agent config...
+12:24:38 INFO     agentteam.agents.validation_agent: Validation agent config loaded successfully
+12:24:38 INFO     agentteam.agents.repair_agent: Loading repair agent config...
+12:24:38 INFO     agentteam.agents.repair_agent: Repair agent config loaded successfully
+12:24:41 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_broken_employee_data.csv.py — Retrieves CSV data from broken_employee_data.csv, analyzes structure, and writes to bronze output.
+12:24:48 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script executed successfully: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_broken_employee_data.csv.py
+12:24:52 INFO     agentteam.utils.routing_utils: Routing decision: validation_agent — Retrieval has completed successfully with data written to the bronze layer; the next logical step in the data pipeline is to validate the data quality.
+12:24:52 INFO     agentteam.nodes.validation_node: Cleared stale reports
+12:24:54 INFO     agentteam.tools.validation_agent.validator_tools: Loaded validation rules for broken_employee_data.csv: 5 schema rules, 5 transformations
+12:24:54 INFO     agentteam.tools.validation_agent.validator_tools: Read sample: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze\broken_employee_data.csv — 6 rows, 5 cols
+12:24:59 INFO     agentteam.tools.validation_agent.validator_tools: Inferred columns for transformations: {'coerce_numeric': ['employeeAge', 'salary'], 'create_unique_employee_id': ['id', 'employeeName']}
+12:24:59 INFO     agentteam.tools.validation_agent.validator_tools: operation='coerce_numeric' columns=['employeeAge', 'salary'] selection='explicit' description=None fill_value=None
+12:24:59 INFO     agentteam.tools.validation_agent.validator_tools: operation='create_unique_employee_id' columns=['id', 'employeeName'] selection='explicit' description='Create a new column unique_employee_id by generating a suitable hash' fill_value=None
+12:24:59 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 5, 'built_in': 4, 'plugin': 0, 'needs_generation': 1, 'operations': ['rename_to_snake_case', 'coerce_numeric', 'rename_to_snake_case', 'coerce_numeric', 'create_unique_employee_id'], 'pending_operations': ['create_unique_employee_id']}
+12:24:59 INFO     agentteam.tools.validation_agent.validator_tools: Execution plan: {'total_steps': 5, 'built_in': 4, 'plugin': 0, 'needs_generation': 1, 'operations': ['rename_to_snake_case', 'coerce_numeric', 'rename_to_snake_case', 'coerce_numeric', 'create_unique_employee_id'], 'pending_operations': ['create_unique_employee_id']}
+12:25:01 INFO     agentteam.utils.plugin_registry: Plugin saved: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\plugins\create_unique_employee_id.py
+12:25:01 INFO     agentteam.utils.rule_executor: Registered operation: create_unique_employee_id
+12:25:01 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: create_unique_employee_id
+12:25:01 INFO     agentteam.tools.validation_agent.validator_tools: Plugin generated and registered: create_unique_employee_id at C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\plugins\create_unique_employee_id.py
+12:25:04 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 5, 'built_in': 5, 'plugin': 0, 'needs_generation': 0, 'operations': ['rename_to_snake_case', 'coerce_numeric', 'rename_to_snake_case', 'coerce_numeric', 'create_unique_employee_id'], 'pending_operations': []}
+12:25:04 INFO     agentteam.utils.execution_planner: Executing: rename_to_snake_case (built_in) on columns: []
+12:25:04 ERROR    agentteam.tools.validation_agent.validator_tools: Transformation failed: Length mismatch: Expected axis has 5 elements, new values have 0 elements
+12:25:07 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 3, 'built_in': 3, 'plugin': 0, 'needs_generation': 0, 'operations': ['rename_to_snake_case', 'coerce_numeric', 'create_unique_employee_id'], 'pending_operations': []}
+12:25:07 INFO     agentteam.utils.execution_planner: Executing: rename_to_snake_case (built_in) on columns: []
+12:25:07 ERROR    agentteam.tools.validation_agent.validator_tools: Transformation failed: Length mismatch: Expected axis has 5 elements, new values have 0 elements
+12:25:14 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 3, 'built_in': 3, 'plugin': 0, 'needs_generation': 0, 'operations': ['rename_to_snake_case', 'coerce_numeric', 'create_unique_employee_id'], 'pending_operations': []}
+12:25:14 INFO     agentteam.utils.execution_planner: Executing: rename_to_snake_case (built_in) on columns: ['employeeName', 'employeeAge']
+12:25:14 ERROR    agentteam.tools.validation_agent.validator_tools: Transformation failed: Length mismatch: Expected axis has 5 elements, new values have 2 elements
+12:25:17 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 3, 'built_in': 3, 'plugin': 0, 'needs_generation': 0, 'operations': ['rename_to_snake_case', 'coerce_numeric', 'create_unique_employee_id'], 'pending_operations': []}
+12:25:17 INFO     agentteam.utils.execution_planner: Executing: rename_to_snake_case (built_in) on columns: []
+12:25:17 ERROR    agentteam.tools.validation_agent.validator_tools: Transformation failed: Length mismatch: Expected axis has 5 elements, new values have 0 elements
+12:25:21 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['coerce_numeric', 'create_unique_employee_id'], 'pending_operations': []}
+12:25:21 INFO     agentteam.utils.execution_planner: Executing: coerce_numeric (built_in) on columns: ['id', 'employeeAge', 'salary']
+12:25:21 INFO     agentteam.utils.execution_planner: Executing: create_unique_employee_id (built_in) on columns: []
+12:25:21 ERROR    agentteam.tools.validation_agent.validator_tools: Transformation failed: 'name'
+12:25:24 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['coerce_numeric', 'create_unique_employee_id'], 'pending_operations': []}
+12:25:24 INFO     agentteam.utils.execution_planner: Executing: coerce_numeric (built_in) on columns: ['id', 'employeeAge', 'salary']
+12:25:24 INFO     agentteam.utils.execution_planner: Executing: create_unique_employee_id (built_in) on columns: []
+12:25:24 ERROR    agentteam.tools.validation_agent.validator_tools: Transformation failed: 'name'
+12:25:26 INFO     agentteam.utils.plugin_registry: Plugin saved: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\plugins\create_unique_employee_id.py
+12:25:26 INFO     agentteam.utils.rule_executor: Registered operation: create_unique_employee_id
+12:25:26 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: create_unique_employee_id
+12:25:26 INFO     agentteam.tools.validation_agent.validator_tools: Plugin generated and registered: create_unique_employee_id at C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\plugins\create_unique_employee_id.py
+12:25:29 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['coerce_numeric', 'create_unique_employee_id'], 'pending_operations': []}
+12:25:29 INFO     agentteam.utils.execution_planner: Executing: coerce_numeric (built_in) on columns: ['id', 'employeeAge', 'salary']
+12:25:29 INFO     agentteam.utils.execution_planner: Executing: create_unique_employee_id (built_in) on columns: []
+12:25:29 INFO     agentteam.tools.validation_agent.validator_tools: Transformation complete: 6 rows → C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_broken_employee_data.csv
+12:25:32 INFO     agentteam.tools.validation_agent.validator_tools: Transformation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\transformation_report.json — Transformed employee data by coercing numeric types and generating unique employee identifiers.
+12:25:40 INFO     agentteam.tools.validation_agent.validator_tools: Validation script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.py — Validates transformed employee data against schema rules and partitions into silver and quarantine files.
+12:25:44 INFO     agentteam.tools.validation_agent.validator_tools: Script executed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.py
+12:25:46 INFO     agentteam.tools.validation_agent.validator_tools: Validation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\validation_report.json — PASS for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze\broken_employee_data.csv
+12:25:53 INFO     agentteam.nodes.validation_node: Silver file found: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\silver\broken_employee_data.csv
+12:25:53 INFO     agentteam.nodes.validation_node: Validation complete — outcome: PASS
+12:25:54 INFO     agentteam.utils.routing_utils: Routing decision: end — Validation passed with 1 file validated and 1 passed with no errors, so the pipeline is complete.

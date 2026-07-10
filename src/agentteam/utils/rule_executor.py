@@ -34,7 +34,10 @@ def rename_to_snake_case(df: pd.DataFrame, rule: TransformationRule) -> pd.DataF
         s = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", s)
         return s.replace(" ", "_").lower()
 
-    df.columns = [to_snake(c) for c in df.columns]
+    for col in rule.columns:
+        if col in df.columns:
+            new_col = to_snake(col)
+            df.rename(columns={col: new_col}, inplace=True)
     return df
 
 
@@ -43,52 +46,50 @@ def rename_to_camel_case(df: pd.DataFrame, rule: TransformationRule) -> pd.DataF
         parts = re.split(r"[_\s]+", name)
         return parts[0].lower() + "".join(p.capitalize() for p in parts[1:])
 
-    df.columns = [to_camel(c) for c in df.columns]
+    for col in rule.columns:
+        if col in df.columns:
+            new_col = to_camel(col)
+            df.rename(columns={col: new_col}, inplace=True)
     return df
 
 
 def coerce_numeric(df: pd.DataFrame, rule: TransformationRule) -> pd.DataFrame:
-    target = rule.columns or df.columns.tolist()
-    for col in target:
+    for col in rule.columns:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     return df
 
 
 def coerce_date(df: pd.DataFrame, rule: TransformationRule) -> pd.DataFrame:
-    target = rule.columns or []
-    for col in target:
+    for col in rule.columns:
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], errors="coerce")
     return df
 
 
 def fill_missing_mean(df: pd.DataFrame, rule: TransformationRule) -> pd.DataFrame:
-    target = rule.columns or df.select_dtypes(include="number").columns.tolist()
-    for col in target:
+    for col in rule.columns:
         if col in df.columns:
             df[col] = df[col].fillna(df[col].mean())
     return df
 
 
 def fill_missing_mode(df: pd.DataFrame, rule: TransformationRule) -> pd.DataFrame:
-    target = rule.columns or df.columns.tolist()
-    for col in target:
+    for col in rule.columns:
         if col in df.columns and not df[col].mode().empty:
             df[col] = df[col].fillna(df[col].mode()[0])
     return df
 
 
 def fill_missing_value(df: pd.DataFrame, rule: TransformationRule) -> pd.DataFrame:
-    target = rule.columns or df.columns.tolist()
-    for col in target:
+    for col in rule.columns:
         if col in df.columns:
             df[col] = df[col].fillna(rule.fill_value)
     return df
 
 
 def drop_missing(df: pd.DataFrame, rule: TransformationRule) -> pd.DataFrame:
-    target = [c for c in (rule.columns or df.columns.tolist()) if c in df.columns]
+    target = [c for c in rule.columns if c in df.columns]
     return df.dropna(subset=target)
 
 

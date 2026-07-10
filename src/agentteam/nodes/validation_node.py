@@ -37,15 +37,10 @@ class ValidationNode(BaseAgentNode):
     ) -> tuple[str | None, list[ErrorReport], str | None]:
         """
         Inspect agent messages to detect if repair is needed.
-        Returns (repair_target, repair_error, repair_script_path) or (None, None, None).
+        Returns (repair_target, repair_errors, repair_script_path) or (None, [], None).
         """
         tool_outputs = extract_tool_outputs(messages)
-        empty_repair_error = ErrorReport(
-            error=None,
-            stage="no_error",
-            error_type=None,
-            should_repair=False,
-        )
+
         # detect script crash
         crashed_output = next(
             (o for o in tool_outputs if "SCRIPT_FAILED" in str(o)), None
@@ -66,32 +61,27 @@ class ValidationNode(BaseAgentNode):
                 script_path,
             )
 
-        # detect 100% quarantine by reading transformation report
-        transformation_report_path = (
-            self.workspace / "logs" / "transformation_report.json"
-        )
-        if transformation_report_path.exists():
+        # detect 100% quarantine from validation report
+        # quarantine now happens in validation script not transformation
+        validation_report_path = self.workspace / "logs" / "validation_report.json"
+        if validation_report_path.exists():
             try:
-                reports = json.loads(
-                    transformation_report_path.read_text(encoding="utf-8")
-                )
-                if isinstance(reports, list):
-                    report = reports[-1]
-                else:
-                    report = reports
-                valid_rows = report.get("total_rows_output", 1)
+                reports = json.loads(validation_report_path.read_text(encoding="utf-8"))
+                report = reports[-1] if isinstance(reports, list) else reports
+                valid_rows = report.get("row_count", 1)
                 quarantined_rows = report.get("quarantined_rows", 0)
-                if valid_rows == 0 and quarantined_rows > 0:
-                    script_path = self._find_transformation_script(file_path)
+                total = valid_rows + quarantined_rows
+                if valid_rows == 0 and total > 0:
+                    script_path = self._find_validation_script(file_path)
                     logger.warning(
-                        f"100% quarantine detected for {file_path} — {quarantined_rows} rows quarantined"
+                        f"100% quarantine in validation for {file_path} — {quarantined_rows} rows quarantined"
                     )
                     return (
                         "transformation",
                         [
                             ErrorReport(
-                                error=f"100% of rows quarantined ({quarantined_rows} rows). Transformation rules are too strict.",
-                                stage="transformation",
+                                error=f"100% of rows quarantined ({quarantined_rows} rows). Validation rules too strict.",
+                                stage="validation",
                                 error_type="quarantine_error",
                                 should_repair=True,
                             )
@@ -99,9 +89,9 @@ class ValidationNode(BaseAgentNode):
                         script_path,
                     )
             except Exception as e:
-                logger.warning("Could not read transformation report: %s", e)
+                logger.warning("Could not read validation report: %s", e)
 
-        return None, [empty_repair_error], None
+        return None, [], None
 
     def _find_transformation_script(self, file_path: str) -> str | None:
         """Find the transformation script for a given file."""
@@ -154,9 +144,13 @@ class ValidationNode(BaseAgentNode):
 
         for file_path, result in zip(bronze_files, results):
             if result.validation_outcome == "PASS":
-                silver_path = silver_dir / Path(file_path).name
-                if silver_path.exists():
-                    silver_files.append(str(silver_path))
+                stem = Path(file_path).stem
+                matches = list(silver_dir.glob(f"*{stem}*"))
+                if matches:
+                    silver_files.append(str(matches[0]))
+                    logger.info(f"Silver file found: {matches[0]}")
+                else:
+                    logger.warning(f"No silver file found for {file_path}")
 
         overall_outcome = (
             "PASS" if all(r.validation_outcome == "PASS" for r in results) else "FAIL"

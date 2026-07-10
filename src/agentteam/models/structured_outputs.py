@@ -47,6 +47,9 @@ class ValidationReport(BaseModel):
     validation_violations: list[str] = Field(
         default_factory=list, description="List of validation errors found."
     )
+    quarantined_rows: int = Field(
+        description="Number of rows quarantined due to validation errors."
+    )
     summary: str = Field(description="One sentence summary of the validation result.")
 
 
@@ -182,29 +185,46 @@ class ColumnRule(BaseModel):
     )
 
 
+class InferredColumn(BaseModel):
+    """Inferred list of columns for the transformation rule"""
+
+    transformations_column_mapping: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Mapping of transformation operations to their inferred columns based on sample dataset."
+        "For example: {'rename_to_snake_case': ['First Name', 'Last Name'], 'coerce_numeric': ['Salary']}",
+    )
+
+
 class TransformationRule(BaseModel):
     """A single transformation to apply before validation."""
 
-    operation: Literal[
-        "rename_to_snake_case",
-        "rename_to_camel_case",
-        "fill_missing_mean",
-        "fill_missing_mode",
-        "fill_missing_value",
-        "drop_missing",
-        "coerce_numeric",
-        "coerce_date",
-        "drop_duplicates",
-        "quarantine_missing",
-        "quarantine_duplicates",
-        "quarantine_type_mismatch",
-    ] = Field(description="The transformation or quarantine operation to apply.")
-    columns: list[str] | None = Field(
-        default=None,
-        description="Columns to apply this operation to. None means all columns.",
+    operation: str = Field(
+        description=(
+            "The transformation operation to apply. "
+            "Built-in operations: rename_to_snake_case, rename_to_camel_case, "
+            "coerce_numeric, coerce_date, fill_missing_mean, fill_missing_mode, "
+            "fill_missing_value, drop_missing, drop_duplicates. "
+            "Any other value is treated as a custom plugin operation."
+        )
     )
+    columns: list[str] = Field(
+        default_factory=list,
+        description="Columns to apply this operation to",
+    )
+
+    selection: Literal["explicit", "infer", "all"] = Field(
+        default="all",
+        description="How to select columns for this transformation.",
+    )
+
+    description: str | None = Field(
+        default=None,
+        description="One sentence describing what this transformation does. Used by LLM to generate plugins",
+    )
+
     fill_value: str | None = Field(
-        default=None, description="Value to use when operation is fill_missing_value."
+        default=None,
+        description="Value to use when operation is fill_missing_value.",
     )
 
 
@@ -212,9 +232,9 @@ class TransformationEntry(BaseModel):
     """A single transformation applied to the dataset."""
 
     operation: str = Field(description="The transformation operation applied.")
-    columns: list[str] | None = Field(
-        default=None,
-        description="Columns the operation was applied to. None means all columns.",
+    columns: list[str | None] = Field(
+        default_factory=list,
+        description="Columns the operation was applied to.",
     )
     rows_affected: int = Field(
         default=0, description="Number of rows affected by this transformation."

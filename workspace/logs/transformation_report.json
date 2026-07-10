@@ -14,18 +14,18 @@
           "salary"
         ],
         "rows_affected": 6,
-        "reason": "Numeric coercion on id, employeeAge, and salary columns to ensure proper data types"
+        "reason": "Coerced numeric columns to appropriate data types"
       },
       {
-        "operation": "drop_duplicates",
+        "operation": "create_unique_employee_id",
         "columns": [
-          "id"
+          "unique_employee_id"
         ],
         "rows_affected": 6,
-        "reason": "Removed duplicate id values to maintain unique constraint"
+        "reason": "Generated unique hash-based employee identifiers"
       }
     ],
-    "inferred_rules": true,
-    "summary": "Transformed broken_employee_data.csv by coercing numeric columns and removing duplicate IDs, resulting in 6 rows output with inferred validation rules."
+    "inferred_rules": false,
+    "summary": "Transformed employee data by coercing numeric types and generating unique employee identifiers."
   }
 ]
