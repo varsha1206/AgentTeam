@@ -31,6 +31,9 @@
 - Transformation script splits rows into temp/transformed_<filename>.csv (valid) and output/quarantine/ (bad rows with quarantine_reason column)
 - Validation script reads temp file and asserts schema rules, promotes to silver on PASS
 - Added TransformationReport and write_transformation_report — logs every transformation applied, rows affected, and reason
+- Added InferredColumn structured model and validator-side inference of transformation columns from sample data
+- Added ErrorReport structured model so operational failures are tracked separately from validation violations
+- Split validation violations from validation errors so repair routing only triggers on explicit repair-worthy failures
 - Added AgentInstruction structured model — orchestrator sends typed instructions to every agent at invocation time instead of raw f-strings
 - Added DataSource structured model — retrieval agent receives source type, path, and output filename via AgentInstruction
 - execute_script now validates JSON output before returning — returns SCRIPT_FAILED if script runs but prints non-JSON, preventing agent from spawning diagnostic scripts
@@ -48,6 +51,7 @@
 - Transformation logic is now independently unit-testable without requiring an LLM
 - Separation established between intelligent planning (LLM) and deterministic execution (RuleExecutor)
 - Began redesign of Repair Agent to modify FileValidationRules instead of patching generated Python scripts
+- Added repair-safe validation flow so dataset violations do not automatically trigger repair
 - Designed hybrid execution architecture where unsupported transformations can later be generated as reusable plugins by the LLM while supported operations remain deterministic
 
 ## Architecture
@@ -84,6 +88,8 @@
 - TransformationReport alongside ValidationReport — provides complete audit trail for thesis evaluation.
 - RuleExecutor separates intelligent planning from deterministic execution, making transformation behaviour reproducible, testable, and independent of LLM variability.
 - Registry-based transformation execution enables future extension through plugins without modifying the execution engine.
+- Inferred-column resolution keeps transform planning flexible without giving up deterministic execution.
+- ErrorReport provides a typed boundary between operational failures and data-quality violations.
 - Planned hybrid execution model — deterministic operations executed by RuleExecutor, unsupported transformations generated as reusable plugins by the LLM.
 
 ## Challenges
