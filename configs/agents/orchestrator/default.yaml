@@ -49,6 +49,6 @@ routing_prompt: |
   If status is complete and no errors, route to the next logical agent in the pipeline.
   If retrieval completed, route to validation_agent.
   If validation passed (no errors), route to end.
-  If validation failed (script crashed or quarantine percentage is 100%), route to repair_agent.
+  If validation failed (errors present), route to repair_agent.
   If anything failed, route to end.
   Decide the next node.

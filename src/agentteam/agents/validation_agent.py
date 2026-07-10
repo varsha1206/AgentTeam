@@ -40,13 +40,8 @@ class ValidationAgent:
         self.tools = ValidatorTools(
             bronze_dir=workspace / "output/bronze",
             silver_dir=workspace / "output/silver",
-            quarantine_dir=workspace / "output" / "quarantine",
             generated_dir=workspace / "generated",
-            temp_dir=workspace / "temp",
             logs_dir=workspace / "logs",
-            rules_path=workspace.parent / "configs" / "validation_rules.yaml",
-            plugins_dir=workspace / "plugins",
-            llm=self.llm_model,
         )
         self.app = self._build_app()
 
@@ -64,9 +59,6 @@ class ValidationAgent:
         prompt = self.cfg.system_prompt.format(
             generated_dir=self.tools.generated_dir,
             logs_dir=self.tools.logs_dir,
-            silver_dir=self.tools.silver_dir,
-            quarantine_dir=self.tools.quarantine_dir,
-            temp_dir=self.tools.temp_dir,
         )
         return SystemMessage(
             content=[

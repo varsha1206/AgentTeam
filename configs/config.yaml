@@ -2,4 +2,3 @@ defaults:
   - agents/orchestrator: default
   - agents/retrieval: default
   - agents/validation: default
-  - agents/repair: default
