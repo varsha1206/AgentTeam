@@ -9,6 +9,8 @@ from typing import Annotated, Any, Mapping
 
 from langchain.agents import AgentState
 
+from agentteam.models.structured_outputs import ErrorReport
+
 
 def merge_dict(existing: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
     """
@@ -80,8 +82,21 @@ class GraphState(AgentState):
     ]  # list of file paths from retrieval
     silver_layer: Annotated[list[str], lambda x, y: y]  # list of validated file paths
 
+    # Quanrantine layer
+    quarantine_layer: Annotated[
+        list[str], lambda x, y: y
+    ]  # list of quarantined file paths
+    repair_target: Annotated[
+        str | None, lambda x, y: y
+    ]  # which agent's script failed: "retrieval" or "validation"
+    repair_error: Annotated[
+        list[ErrorReport], lambda x, y: y
+    ]  # exact error message from failed script execution
+    # Repair Agent cap
+    repair_attempts: Annotated[int, lambda x, y: y]  # always replace with latest value
+
     # Error handling
-    errors: Annotated[list[str], operator.add]
+    errors: Annotated[list[ErrorReport] | None, operator.add]
 
     # Flexible artifact store
     # (LLM/tool outputs, agent memory, etc.)
@@ -90,5 +105,4 @@ class GraphState(AgentState):
     # Metadata (run config, model info, etc.)
     metadata: dict[str, Any]
 
-    # Repair Agent cap
-    repair_attempts: Annotated[int, lambda x, y: y]  # always replace with latest value
+    repair_script_path: Annotated[str | None, lambda x, y: y]

@@ -1,0 +1,36 @@
+global_rules:
+  transformations:
+    - operation: rename_to_snake_case
+    - operation: coerce_numeric
+
+rules:
+  broken_employee_data.csv:
+    schema:
+      id:
+        type: int
+        nullable: false
+      name:
+        type: str
+        nullable: false
+      age:
+        type: int
+        nullable: false
+        min: 0
+        max: 150
+      salary:
+        type: float
+        nullable: false
+        min: 0
+        max: 999999
+      department:
+        type: str
+        nullable: false
+    overrides:
+      transformations:
+        - operation: rename_to_snake_case
+          selection: all
+        - operation: coerce_numeric
+          selection: infer
+        - operation: create_unique_employee_id
+          selection: infer
+          description: "Create a new column unique_employee_id by generating a suitable hash"
