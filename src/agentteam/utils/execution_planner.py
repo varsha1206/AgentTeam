@@ -118,7 +118,7 @@ class ExecutionPlanner:
             logger.info(
                 f"Executing: {step.rule.operation} "
                 f"({step.execution_type.value}) "
-                f"on columns: {step.rule.columns or 'all'}"
+                f"on columns: {step.rule.columns}"
             )
             df = RuleExecutor.apply_single(df, step.rule)
 

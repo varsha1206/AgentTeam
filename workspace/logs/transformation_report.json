@@ -7,33 +7,37 @@
     "quarantined_rows": 0,
     "transformations_applied": [
       {
-        "operation": "coerce_numeric",
-        "columns": [
-          "salary"
-        ],
+        "operation": "rename_to_snake_case",
+        "columns": [],
         "rows_affected": 6,
-        "reason": "Convert salary to numeric, handling non-numeric strings"
+        "reason": "Standardize column names to snake_case format"
       },
       {
         "operation": "coerce_numeric",
-        "columns": [
-          "id",
-          "employeeAge"
-        ],
+        "columns": [],
         "rows_affected": 6,
-        "reason": "Convert id and employeeAge to numeric"
+        "reason": "Coerce numeric columns to proper types"
       },
       {
         "operation": "rename_to_snake_case",
-        "columns": [
-          "employeeName",
-          "employeeAge"
-        ],
+        "columns": [],
         "rows_affected": 6,
-        "reason": "Standardize column names to snake_case"
+        "reason": "Standardize column names to snake_case format"
+      },
+      {
+        "operation": "coerce_numeric",
+        "columns": [],
+        "rows_affected": 6,
+        "reason": "Coerce numeric columns with inferred selection"
+      },
+      {
+        "operation": "create_unique_employee_id",
+        "columns": [],
+        "rows_affected": 6,
+        "reason": "Create a new column unique_employee_id by generating a suitable hash"
       }
     ],
-    "inferred_rules": true,
-    "summary": "Applied coerce_numeric and rename_to_snake_case transformations to broken_employee_data.csv."
+    "inferred_rules": false,
+    "summary": "Applied 5 transformations including column renaming, numeric coercion, and unique employee ID generation."
   }
 ]

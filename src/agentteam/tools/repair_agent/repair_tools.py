@@ -33,6 +33,13 @@ class RepairTools:
             if not path.exists():
                 raise FileNotFoundError(f"Required directory not found at {path}")
 
+    def read_execution_log(self) -> str:
+        """Read the structured execution log from workspace/logs/execution.log."""
+        log_path = self.logs_dir / "execution.log"
+        if not log_path.exists():
+            return "ERROR: No execution log found."
+        return log_path.read_text(encoding="utf-8")
+
     def read_script(self, script_path: str) -> str:
         """Read the contents of a script file."""
         path = Path(script_path)
@@ -99,6 +106,14 @@ class RepairTools:
         _self = self
 
         @tool
+        def read_execution_log() -> str:
+            """
+            Read the structured execution log from workspace/logs/execution_log.json.
+            Call this to understand what happened during the last execution.
+            """
+            return _self.read_execution_log()
+
+        @tool
         def read_script(script_path: str) -> str:
             """
             Read the contents of a script file.
@@ -150,6 +165,7 @@ class RepairTools:
             return _self.execute_script(script_path)
 
         return [
+            read_execution_log,
             read_transformation_report,
             read_validation_report,
             read_script,

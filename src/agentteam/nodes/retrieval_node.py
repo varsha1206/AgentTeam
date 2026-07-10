@@ -4,7 +4,7 @@ from langchain_core.messages import HumanMessage
 
 from agentteam.agents.retrieval_agent import retrieval_agent_app
 from agentteam.graph.state import GraphState
-from agentteam.models.structured_outputs import DataSource, RetrievalResult
+from agentteam.models.structured_outputs import DataSource, ErrorReport, RetrievalResult
 from agentteam.utils.base_node import BaseAgentNode, BaseRouter
 from agentteam.utils.result_parser import parse_retrieval_result
 
@@ -58,6 +58,13 @@ class RetrievalRouter(BaseRouter):
             else RetrievalResult(
                 status="failed",
                 summary="No retrieval data found.",
-                errors=["retrieved_data was empty."],
+                errors=[
+                    ErrorReport(
+                        error="retrieved_data was empty.",
+                        stage="retrieval",
+                        error_type=None,
+                        should_repair=True,
+                    )
+                ],
             )
         )

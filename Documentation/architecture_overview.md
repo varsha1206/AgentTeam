@@ -77,12 +77,14 @@ Responsibilities
 
 - inspect dataset sample
 - load user-defined validation rules
-- infer missing validation rules
+- infer missing validation rules and transformation columns
 - produce FileValidationRules
 
 The validator decides **what** should happen.
 
 It does **not** execute transformations.
+
+When a transformation rule uses infer-based selection, the validator resolves the most appropriate columns from a sample of the source file and writes explicit transformation rules before execution. This keeps planning in the LLM layer while the deterministic executor still receives concrete columns.
 
 ---
 
@@ -105,6 +107,16 @@ Every execution is reproducible.
 
 Every stage produces structured reports.
 
+### ErrorReport
+
+Records
+
+- execution-stage failures
+- quarantine-related repair signals
+- whether the repair agent should act
+
+ErrorReport is kept separate from validation violations so data-quality issues do not automatically trigger repair.
+
 ### TransformationReport
 
 Records
@@ -123,6 +135,8 @@ Records
 - validation errors
 - promoted file
 - row counts
+
+Validation violations describe data-quality problems in the dataset. Validation errors describe operational failures such as script crashes or unrecoverable validation issues. Only structured errors with an explicit repair signal should route to the repair agent.
 
 These reports provide a complete audit trail for evaluation.
 
@@ -153,6 +167,7 @@ All communication between agents uses Pydantic models.
 
 Examples
 
+- ErrorReport
 - AgentInstruction
 - DataSource
 - FileValidationRules
@@ -235,6 +250,8 @@ Completed
 - Medallion storage architecture
 - Structured reporting
 - Deterministic transformation execution
+- Inferred-column resolution for transformation rules
+- Structured ErrorReport routing for repair-safe validation
 
 In Progress
 

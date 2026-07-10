@@ -46,6 +46,7 @@ class ValidationAgent:
             logs_dir=workspace / "logs",
             rules_path=workspace.parent / "configs" / "validation_rules.yaml",
             plugins_dir=workspace / "plugins",
+            llm=self.llm_model,
         )
         self.app = self._build_app()
 
