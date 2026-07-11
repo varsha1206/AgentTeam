@@ -70,6 +70,45 @@ Responsibilities
 Produces immutable raw datasets.
 
 ---
+## Repair Agent
+
+Responsibilities
+
+- detect script crashes in retrieval, transformation, and validation stages
+- patch failing scripts for retrieval failures
+- patch failing scripts for validation failures
+- re-run execution after repair
+- route back to the originating agent after successful repair
+
+The repair agent operates on pipeline failures only.
+
+It does not modify source data or business validation rules.
+
+Repair is capped at a configurable maximum attempt count. If the maximum is reached the pipeline terminates with a structured failure report.
+
+### Failure Detection
+
+Every `execute_script` call across all agents returns a structured JSON failure object on error:
+
+```json
+{
+  "SCRIPT_FAILED": true,
+  "stage": "validation",
+  "error": "...",
+  "script_path": "..."
+}
+```
+
+The stage field identifies which agent produced the failure. Detection logic in each node inspects tool outputs for this structure and sets `repair_target`, `repair_error`, and `repair_script_path` in GraphState. No keyword inference on error messages is used.
+
+### Repair Routing
+
+After repair completes the pipeline routes back to the originating agent:
+
+- `repair_target: retrieval` → routes back to retrieval agent
+- `repair_target: transformation` → routes back to validation agent
+- `repair_target: validation` → routes back to validation agent
+---
 
 ## Validation Agent
 
@@ -245,6 +284,7 @@ Completed
 - Custom StateGraph orchestration
 - Retrieval Agent
 - Validation Agent
+- Repair Agent
 - RuleExecutor
 - Typed communication models
 - Medallion storage architecture
@@ -252,11 +292,11 @@ Completed
 - Deterministic transformation execution
 - Inferred-column resolution for transformation rules
 - Structured ErrorReport routing for repair-safe validation
+- Stage-tagged failure detection across all pipeline stages
+- Repair routing back to originating agent
 
 In Progress
 
-- Repair Agent redesign
-- Hybrid plugin generation
 - JSON and API ingestion
 - Streamlit interface
 - Comprehensive unit testing

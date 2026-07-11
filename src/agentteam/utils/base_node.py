@@ -3,6 +3,7 @@ Base class for all agent nodes in the orchestrator.
 Provides standard patterns for agent invocation, result parsing, and routing.
 """
 
+import json
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -12,7 +13,12 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 
 from agentteam.graph.state import GraphState
-from agentteam.models.structured_outputs import AgentInstruction, RoutingDecision
+from agentteam.models.structured_outputs import (
+    AgentInstruction,
+    ErrorReport,
+    RoutingDecision,
+)
+from agentteam.utils.message_utils import extract_tool_outputs
 from agentteam.utils.routing_utils import decide_routing
 
 logger = logging.getLogger(__name__)
@@ -42,6 +48,61 @@ class BaseAgentNode(ABC):
         """Invokes an agent with a single instruction and returns its messages."""
         result = agent.invoke({"messages": [instruction]})
         return result.get("messages", [])
+
+    def _detect_repair_needed(
+        self, messages: list, file_path: str
+    ) -> tuple[str | None, list[ErrorReport], str | None]:
+        """
+        Inspect tool outputs for tagged SCRIPT_FAILED responses.
+        Stage is determined from the tag, not from error message content.
+        """
+        tool_outputs = extract_tool_outputs(messages)
+
+        for output in tool_outputs:
+            try:
+                parsed = json.loads(str(output))
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+            if not parsed.get("SCRIPT_FAILED"):
+                continue
+
+            stage = parsed.get("stage", "unknown")
+            error = parsed.get("error", str(output))
+            script_path = parsed.get("script_path") or self._find_script(
+                stage, file_path
+            )
+
+            logger.warning(f"{stage} failure detected for {file_path}: {error[:200]}")
+
+            return (
+                stage,
+                [
+                    ErrorReport(
+                        error=error,
+                        stage=stage,
+                        error_type="script_crash",
+                        should_repair=True,
+                    )
+                ],
+                script_path,
+            )
+
+        return None, [], None
+
+    def _find_script(self, stage: str, file_path: str) -> str | None:
+        """Find the script path for a given stage and file."""
+        stem = Path(file_path).stem
+        script_map = {
+            "validation": f"validation_{stem}.py",
+            "transformation": f"transformation_{stem}.py",
+            "retrieval": f"retrieval_{stem}.py",
+        }
+        filename = script_map.get(stage)
+        if not filename:
+            return None
+        path = self.workspace / "generated" / filename
+        return str(path) if path.exists() else None
 
     @abstractmethod
     def build_instructions(self, state: GraphState) -> list[HumanMessage]:

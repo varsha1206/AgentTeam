@@ -245,7 +245,14 @@ class ValidatorTools:
             )
         except Exception as e:
             logger.error(f"Transformation failed: {e}")
-            return json.dumps({"error": str(e)})
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": "transformation",
+                    "error": str(e),
+                    "script_path": None,
+                }
+            )
 
     def write_script(self, script: GeneratedScript) -> str:
         """Save a generated validation script to workspace/generated/."""
@@ -255,11 +262,20 @@ class ValidatorTools:
         logger.info(f"Validation script written: {script_path} — {script.description}")
         return str(script_path)
 
-    def execute_script(self, script_path: str) -> str:
-        """Execute a validation script and return its output."""
+    def execute_script(self, script_path: str, stage: str = "unknown") -> str:
+        """Execute a script and return its output."""
         path = Path(script_path)
+
         if not path.exists():
-            return "SCRIPT_FAILED: Script not found"
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": stage,
+                    "error": f"Script not found at {script_path}",
+                    "script_path": script_path,
+                }
+            )
+
         try:
             result = subprocess.run(
                 ["python", str(path)],
@@ -268,9 +284,17 @@ class ValidatorTools:
                 timeout=30,
                 encoding="utf-8",
             )
+
             if result.returncode != 0:
-                logger.error(f"Script failed: {result.stderr}")
-                return f"SCRIPT_FAILED (exit {result.returncode}):\n{result.stderr}"
+                logger.error(f"Script failed: {path} — {result.stderr[:200]}")
+                return json.dumps(
+                    {
+                        "SCRIPT_FAILED": True,
+                        "stage": stage,
+                        "error": result.stderr,
+                        "script_path": str(path),
+                    }
+                )
 
             output = result.stdout.strip()
             logger.info(f"Script executed: {path}")
@@ -279,15 +303,33 @@ class ValidatorTools:
                 json.loads(output)
                 return f"SCRIPT_SUCCESS:\n{output}"
             except json.JSONDecodeError:
-                return (
-                    f"SCRIPT_FAILED: Script ran but did not print valid JSON.\n"
-                    f"Raw output was:\n{output[:500]}"
+                return json.dumps(
+                    {
+                        "SCRIPT_FAILED": True,
+                        "stage": stage,
+                        "error": f"Script ran but did not print valid JSON. Raw output: {output[:300]}",
+                        "script_path": str(path),
+                    }
                 )
 
         except subprocess.TimeoutExpired:
-            return "SCRIPT_FAILED: timed out after 30 seconds"
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": stage,
+                    "error": "Script timed out after 30 seconds",
+                    "script_path": str(path),
+                }
+            )
         except Exception as e:
-            return f"SCRIPT_FAILED: {e}"
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": stage,
+                    "error": str(e),
+                    "script_path": str(path),
+                }
+            )
 
     def write_validated_data(self, source_path: str) -> str:
         """Promote a validated transformed file from temp to silver."""
@@ -418,14 +460,15 @@ class ValidatorTools:
             )
 
         @tool
-        def execute_script(script_path: str) -> str:
+        def execute_script(script_path: str, stage: str) -> str:
             """
             Execute a validation script and return its output.
             Returns SCRIPT_SUCCESS or SCRIPT_FAILED.
             Args:
                 script_path: absolute path returned by write_script
+                stage: 'validation', 'transformation', or 'retrieval' — which stage this script belongs to
             """
-            return _self.execute_script(script_path)
+            return _self.execute_script(script_path, stage)
 
         @tool
         def write_transformation_report(

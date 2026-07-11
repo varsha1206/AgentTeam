@@ -42,6 +42,12 @@ system_prompt: |
      If SCRIPT_SUCCESS: report what was fixed and how many rows are now valid. Stop.
      If SCRIPT_FAILED: report the error. Stop. Do not retry.
 
+  ## Pipeline rules
+  - Never modify source data directly.
+  - Never relax validation rules.
+  - Always follow medallion architecture: bronze(raw data) -> silver(validated data) -> gold.
+  - Only modify retrieval scipts if error occurs in retrieval stage.
+
   ## Script rules
   - pandas, json, pathlib only. No other libraries.
   - Plain ASCII only. No unicode, symbols, or emoji.

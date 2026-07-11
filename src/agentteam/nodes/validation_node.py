@@ -1,6 +1,5 @@
 """Validation agent node and router."""
 
-import json
 import logging
 from pathlib import Path
 
@@ -14,7 +13,6 @@ from agentteam.models.structured_outputs import (
     ValidatorResult,
 )
 from agentteam.utils.base_node import BaseAgentNode, BaseRouter
-from agentteam.utils.message_utils import extract_tool_outputs
 from agentteam.utils.result_parser import parse_validator_result
 from agentteam.utils.routing_utils import decide_routing
 
@@ -31,79 +29,6 @@ class ValidationNode(BaseAgentNode):
             if path.exists():
                 path.unlink()
         logger.info("Cleared stale reports")
-
-    def _detect_repair_needed(
-        self, messages: list, file_path: str
-    ) -> tuple[str | None, list[ErrorReport], str | None]:
-        """
-        Inspect agent messages to detect if repair is needed.
-        Returns (repair_target, repair_errors, repair_script_path) or (None, [], None).
-        """
-        tool_outputs = extract_tool_outputs(messages)
-
-        # detect script crash
-        crashed_output = next(
-            (o for o in tool_outputs if "SCRIPT_FAILED" in str(o)), None
-        )
-        if crashed_output:
-            script_path = self._find_transformation_script(file_path)
-            logger.warning(f"Script crash detected for {file_path}")
-            return (
-                "transformation",
-                [
-                    ErrorReport(
-                        error=str(crashed_output),
-                        stage="transformation",
-                        error_type="script_crash",
-                        should_repair=True,
-                    )
-                ],
-                script_path,
-            )
-
-        # detect 100% quarantine from validation report
-        # quarantine now happens in validation script not transformation
-        validation_report_path = self.workspace / "logs" / "validation_report.json"
-        if validation_report_path.exists():
-            try:
-                reports = json.loads(validation_report_path.read_text(encoding="utf-8"))
-                report = reports[-1] if isinstance(reports, list) else reports
-                valid_rows = report.get("row_count", 1)
-                quarantined_rows = report.get("quarantined_rows", 0)
-                total = valid_rows + quarantined_rows
-                if valid_rows == 0 and total > 0:
-                    script_path = self._find_validation_script(file_path)
-                    logger.warning(
-                        f"100% quarantine in validation for {file_path} — {quarantined_rows} rows quarantined"
-                    )
-                    return (
-                        "transformation",
-                        [
-                            ErrorReport(
-                                error=f"100% of rows quarantined ({quarantined_rows} rows). Validation rules too strict.",
-                                stage="validation",
-                                error_type="quarantine_error",
-                                should_repair=True,
-                            )
-                        ],
-                        script_path,
-                    )
-            except Exception as e:
-                logger.warning("Could not read validation report: %s", e)
-
-        return None, [], None
-
-    def _find_transformation_script(self, file_path: str) -> str | None:
-        """Find the transformation script for a given file."""
-        stem = Path(file_path).stem
-        script_path = self.workspace / "generated" / f"transformation_{stem}.py"
-        return str(script_path) if script_path.exists() else None
-
-    def _find_validation_script(self, file_path: str) -> str | None:
-        """Find the validation script for a given file."""
-        stem = Path(file_path).stem
-        script_path = self.workspace / "generated" / f"validation_{stem}.py"
-        return str(script_path) if script_path.exists() else None
 
     def build_instructions(self, state: GraphState) -> list[HumanMessage]:
         bronze_files = state.get("bronze_layer", [])
@@ -136,7 +61,9 @@ class ValidationNode(BaseAgentNode):
             messages, self._build_structured_llm(ValidatorResult)
         )
 
-    def update_state(self, state: GraphState, results: list[ValidatorResult]) -> dict:
+    def update_state(
+        self, state: GraphState, results: list[ValidatorResult]
+    ) -> tuple[dict, bool]:
         silver_dir = self.workspace / "output" / "silver"
         all_errors = [e for r in results for e in r.errors]
         silver_files = []
@@ -161,12 +88,18 @@ class ValidationNode(BaseAgentNode):
             errors=all_errors,
             summary=f"Validated {len(results)} files — {len(silver_files)} passed.",
         )
+        if overall_outcome == "FAIL":
+            need_repair = any(e.should_repair for e in all_errors)
+
         logger.info(f"Validation complete — outcome: {overall_outcome}")
-        return {
-            "validated_data": combined.model_dump(),
-            "silver_layer": silver_files,
-            "errors": all_errors,
-        }
+        return (
+            {
+                "validated_data": combined.model_dump(),
+                "silver_layer": silver_files,
+                "errors": all_errors,
+            },
+            need_repair,
+        )
 
     def as_node(self):
         agent = self.get_agent()
@@ -217,10 +150,15 @@ class ValidationNode(BaseAgentNode):
                         self._detect_repair_needed(messages, file_path)
                     )
 
-            state_update = self.update_state(state, all_results)
+            state_update, need_repair = self.update_state(state, all_results)
             state_update["messages"] = all_messages
 
-            if repair_target:
+            if (
+                need_repair
+            ):  # Validation failed with OUTCOME: FAIL and repairable errors
+                state_update["repair_error"] = state_update.get("errors")
+
+            if repair_target:  # Validation failed with SCRIPT_FAILED
                 state_update["repair_target"] = repair_target
                 state_update["repair_error"] = repair_error
                 state_update["repair_script_path"] = repair_script_path

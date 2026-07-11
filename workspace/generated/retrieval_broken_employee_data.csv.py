@@ -1,31 +1,35 @@
-import pandas as pd
 import json
+import pandas as pd
 from pathlib import Path
 
 try:
-    source_path = r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv"
-    output_dir = Path(r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # Read CSV
+    csv_path = r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv'
+    df = pd.read_csv(csv_path)
     
-    df = pd.read_csv(source_path)
-    
+    # Get statistics
     rows = len(df)
-    columns = df.columns.tolist()
-    nulls = df.isnull().sum().to_dict()
+    columns = list(df.columns)
+    nulls = {col: int(df[col].isnull().sum()) for col in columns}
     
-    result = {
-        "rows": rows,
-        "columns": columns,
-        "nulls": nulls
+    # Print JSON statistics to stdout
+    stats = {
+        'rows': rows,
+        'columns': columns,
+        'nulls': nulls
     }
-    print(json.dumps(result))
+    print(json.dumps(stats))
     
-    output_file = output_dir / "broken_employee_data.csv"
-    df.to_csv(output_file, index=False)
+    # Write raw data to bronze
+    output_dir = Path(r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze')
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / 'broken_employee_data.csv'
+    
+    df.to_csv(output_path, index=False)
     
 except Exception as e:
-    error_result = {
-        "error": str(e),
-        "type": type(e).__name__
+    error_json = {
+        'error': str(e),
+        'type': type(e).__name__
     }
-    print(json.dumps(error_result))
+    print(json.dumps(error_json))

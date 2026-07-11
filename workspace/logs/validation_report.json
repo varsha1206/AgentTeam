@@ -4,24 +4,14 @@
     "row_count": 0,
     "column_count": 6,
     "validation_violations": [
-      "Column employeeAge is null but not nullable",
-      "Column employeeAge value is not a valid integer: abc",
-      "Column employeeName is null but not nullable",
-      "Column salary value -999.0 is below min 0.0",
-      "Column salary value is not a valid float: five thousand",
-      "Column employeeName is null but not nullable"
+      "Column employeeAge is non-nullable but has null/empty value",
+      "Column employeeAge: type conversion error",
+      "Column employeeName is non-nullable but has null/empty value",
+      "Column salary: value -999.0 below minimum 0.0",
+      "Column salary: type conversion error"
     ],
     "quarantined_rows": 6,
-    "summary": "All 6 rows failed validation: missing required employee names, invalid ages, out-of-range salaries, and non-numeric values were detected.",
+    "summary": "All 6 rows from broken_employee_data.csv were quarantined due to schema violations including null values in non-nullable columns, type conversion errors, and out-of-range salary values.",
     "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\output\\bronze\\broken_employee_data.csv"
-  },
-  {
-    "status": "FAIL",
-    "row_count": 0,
-    "column_count": 6,
-    "validation_violations": [],
-    "quarantined_rows": 0,
-    "summary": "Transformed file was empty; no valid rows to promote to silver.",
-    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_broken_employee_data.csv"
   }
 ]

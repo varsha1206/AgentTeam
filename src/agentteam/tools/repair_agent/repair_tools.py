@@ -68,11 +68,20 @@ class RepairTools:
         logger.info(f"Repaired script written: {script_path} — {script.description}")
         return str(script_path)
 
-    def execute_script(self, script_path: str) -> str:
-        """Execute a repaired script and return its output."""
+    def execute_script(self, script_path: str, stage: str = "unknown") -> str:
+        """Execute a script and return its output."""
         path = Path(script_path)
+
         if not path.exists():
-            return "SCRIPT_FAILED: Script not found"
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": stage,
+                    "error": f"Script not found at {script_path}",
+                    "script_path": script_path,
+                }
+            )
+
         try:
             result = subprocess.run(
                 ["python", str(path)],
@@ -81,26 +90,52 @@ class RepairTools:
                 timeout=30,
                 encoding="utf-8",
             )
+
             if result.returncode != 0:
-                logger.error(f"Repaired script failed: {result.stderr}")
-                return f"SCRIPT_FAILED (exit {result.returncode}):\n{result.stderr}"
+                logger.error(f"Script failed: {path} — {result.stderr[:200]}")
+                return json.dumps(
+                    {
+                        "SCRIPT_FAILED": True,
+                        "stage": stage,
+                        "error": result.stderr,
+                        "script_path": str(path),
+                    }
+                )
 
             output = result.stdout.strip()
-            logger.info(f"Repaired script executed: {path}")
+            logger.info(f"Script executed: {path}")
 
             try:
                 json.loads(output)
                 return f"SCRIPT_SUCCESS:\n{output}"
             except json.JSONDecodeError:
-                return (
-                    f"SCRIPT_FAILED: script did not print valid JSON.\n"
-                    f"Raw output: {output[:300]}"
+                return json.dumps(
+                    {
+                        "SCRIPT_FAILED": True,
+                        "stage": stage,
+                        "error": f"Script ran but did not print valid JSON. Raw output: {output[:300]}",
+                        "script_path": str(path),
+                    }
                 )
 
         except subprocess.TimeoutExpired:
-            return "SCRIPT_FAILED: timed out after 30 seconds"
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": stage,
+                    "error": "Script timed out after 30 seconds",
+                    "script_path": str(path),
+                }
+            )
         except Exception as e:
-            return f"SCRIPT_FAILED: {e}"
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": stage,
+                    "error": str(e),
+                    "script_path": str(path),
+                }
+            )
 
     def as_tools(self) -> list:
         _self = self
@@ -156,13 +191,14 @@ class RepairTools:
             )
 
         @tool
-        def execute_script(script_path: str) -> str:
+        def execute_script(script_path: str, stage: str) -> str:
             """
             Execute a repaired script and return its output.
             Args:
                 script_path: absolute path returned by write_script
+                stage: 'validation', 'transformation', or 'retrieval' -- which stage the script belongs to
             """
-            return _self.execute_script(script_path)
+            return _self.execute_script(script_path, stage)
 
         return [
             read_execution_log,
