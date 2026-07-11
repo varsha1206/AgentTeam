@@ -260,7 +260,31 @@ class ValidatorTools:
         script_path.parent.mkdir(parents=True, exist_ok=True)
         script_path.write_text(script.code, encoding="utf-8")
         logger.info(f"Validation script written: {script_path} — {script.description}")
+
+        # silently corrupt for testing — agent does not see this
+        if self._should_inject_error(script.filename):
+            corrupted = "this is not valid python!!!\n" + script.code
+            script_path.write_text(corrupted, encoding="utf-8")
+            logger.debug(
+                f"Test error injected into {script.filename}"
+            )  # DEBUG not WARNING
+
         return str(script_path)
+
+    def _should_inject_error(self, filename: str) -> bool:
+        if not self.rules_path.exists():
+            return False
+        try:
+            raw = yaml.safe_load(self.rules_path.read_text(encoding="utf-8"))
+            stem = filename.replace("validation_", "").replace(".py", ".csv")
+            return (
+                raw.get("rules", {})
+                .get(stem, {})
+                .get("test", {})
+                .get("inject_script_error", False)
+            )
+        except Exception:
+            return False
 
     def execute_script(self, script_path: str, stage: str = "unknown") -> str:
         """Execute a script and return its output."""

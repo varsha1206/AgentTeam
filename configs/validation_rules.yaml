@@ -25,6 +25,8 @@ rules:
       department:
         type: str
         nullable: false
+    test:
+      inject_script_error: true
     overrides:
       transformations:
         - operation: rename_to_snake_case

@@ -88,6 +88,7 @@ class ValidationNode(BaseAgentNode):
             errors=all_errors,
             summary=f"Validated {len(results)} files — {len(silver_files)} passed.",
         )
+        need_repair = False
         if overall_outcome == "FAIL":
             need_repair = any(e.should_repair for e in all_errors)
 
