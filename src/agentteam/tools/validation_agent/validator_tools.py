@@ -1,7 +1,9 @@
+# src/agentteam/tools/validator_agent/validator_tools.py
+
 """
 Tools for the Validator Agent.
-Responsible for reading output data, planning and executing transformations,
-generating validation scripts, and writing structured reports.
+Responsible for reading output data, generating validation scripts,
+executing them, and writing structured reports.
 """
 
 import json
@@ -10,22 +12,9 @@ import subprocess
 from pathlib import Path
 
 import pandas as pd
-import yaml
 from langchain.tools import tool
-from langchain_core.language_models.chat_models import BaseChatModel
 
-from agentteam.models.structured_outputs import (
-    ColumnRule,
-    FileValidationRules,
-    GeneratedScript,
-    InferredColumn,
-    TransformationEntry,
-    TransformationReport,
-    TransformationRule,
-    ValidationReport,
-)
-from agentteam.utils.execution_planner import ExecutionPlanner
-from agentteam.utils.plugin_registry import PluginRegistry
+from agentteam.models.structured_outputs import GeneratedScript, ValidationReport
 
 logger = logging.getLogger(__name__)
 
@@ -37,29 +26,17 @@ class ValidatorTools:
     """
 
     def __init__(
-        self,
-        bronze_dir: Path,
-        silver_dir: Path,
-        quarantine_dir: Path,
-        generated_dir: Path,
-        logs_dir: Path,
-        rules_path: Path,
-        temp_dir: Path,
-        plugins_dir: Path,
-        llm: BaseChatModel,
+        self, bronze_dir: Path, silver_dir: Path, generated_dir: Path, logs_dir: Path
     ):
         self.bronze_dir = bronze_dir
         self.silver_dir = silver_dir
-        self.quarantine_dir = quarantine_dir
         self.generated_dir = generated_dir
         self.logs_dir = logs_dir
-        self.temp_dir = temp_dir
-        self.rules_path = rules_path
-        self.plugin_registry = PluginRegistry(plugins_dir)
-        self.planner = ExecutionPlanner(self.plugin_registry)
         self._validate_dirs()
-        self.plugin_registry.load_all()
-        self.llm = llm
+
+    # -----------------------------
+    # Validation
+    # -----------------------------
 
     def _validate_dirs(self) -> None:
         for path in [
@@ -67,12 +44,13 @@ class ValidatorTools:
             self.silver_dir,
             self.generated_dir,
             self.logs_dir,
-            self.temp_dir,
-            self.quarantine_dir,
         ]:
             if not path.exists():
                 raise FileNotFoundError(f"Required directory not found at {path}")
 
+    # -----------------------------
+    # Tools
+    # -----------------------------
     def read_sample(self, file_path: str) -> str:
         """Read first 20 rows of a CSV for schema inference."""
         path = Path(file_path)
@@ -389,90 +367,46 @@ class ValidatorTools:
         report_path = self.logs_dir / "validation_report.json"
 
         if report_path.exists():
-            existing = json.loads(report_path.read_text(encoding="utf-8"))
-            if not isinstance(existing, list):
-                existing = [existing]
+            existing_data = json.loads(report_path.read_text(encoding="utf-8"))
+            if not isinstance(existing_data, list):
+                existing_data = [existing_data]
         else:
-            existing = []
+            existing_data = []
 
         entry = report.model_dump()
         entry["source_file"] = source_file
-        existing.append(entry)
 
-        report_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+        existing_data.append(entry)
+
+        report_path.write_text(json.dumps(existing_data, indent=2), encoding="utf-8")
         logger.info(
             f"Validation report appended: {report_path} — {report.status} for {source_file}"
         )
         return str(report_path)
 
+    # -----------------------------
+    # LangChain tool bindings
+    # -----------------------------
+
     def as_tools(self) -> list:
         _self = self
-
-        @tool
-        def load_validation_rules(filename: str) -> str:
-            """
-            Load validation rules for a file. Returns a FileValidationRules JSON object.
-            Call this first before read_sample.
-            Args:
-                filename: just the filename e.g. 'sample.csv'
-            """
-            return _self.load_validation_rules(filename)
 
         @tool
         def read_sample(file_path: str) -> str:
             """
             Read the first 20 rows of a CSV file for schema inference.
             Args:
-                file_path: absolute path to the bronze file
+                file_path: absolute path as returned by list_output_files
             """
             return _self.read_sample(file_path)
-
-        @tool
-        def get_execution_plan(rules_json: str, source_path: str) -> str:
-            """
-            Get the execution plan for a set of FileValidationRules.
-            Returns which operations are built-in, which are plugins, and which need generation.
-            Call this after producing the complete FileValidationRules.
-            Args:
-                rules_json: complete FileValidationRules as a JSON string
-                source_path: absolute path to the bronze
-            """
-            return _self.get_execution_plan(rules_json, source_path)
-
-        @tool
-        def generate_plugin(operation: str, code: str) -> str:
-            """
-            Save a generated plugin function to workspace/plugins/ and register it.
-            Only call this for operations listed as needs_generation in the execution plan.
-            The function must be named exactly the same as the operation.
-            Args:
-                operation: operation name e.g. 'normalize_phone_numbers'
-                code: complete plugin function, plain Python, no markdown, no backticks
-                      must define: def <operation>(df: pd.DataFrame, rule) -> pd.DataFrame
-            """
-            return _self.generate_plugin(operation, code)
-
-        @tool
-        def run_transformation(rules_json: str, source_path: str, filename: str) -> str:
-            """
-            Run the full transformation pipeline against a bronze file.
-            Returns JSON: {transformed_path, total_rows, output_rows, operations_applied}
-            If any operations need plugin generation first, returns {error: NEEDS_PLUGINS, pending_operations: [...]}
-            Args:
-                rules_json: complete FileValidationRules as a JSON string
-                source_path: absolute path to the bronze file
-                filename: just the filename e.g. 'employee_data.csv'
-            """
-            return _self.run_transformation(rules_json, source_path, filename)
 
         @tool
         def write_script(filename: str, code: str, description: str) -> str:
             """
             Save a generated validation script to the generated directory.
-            Use this for validation scripts only — not transformation.
             Args:
-                filename: e.g. 'validation_employee_data.py'
-                code: complete Python script, plain string, no markdown, no backticks
+                filename: e.g. 'validation_001.py'
+                code: complete Python script as plain string, no markdown, no backticks
                 description: one sentence describing what this script validates
             """
             return _self.write_script(
@@ -487,7 +421,6 @@ class ValidatorTools:
         def execute_script(script_path: str, stage: str) -> str:
             """
             Execute a validation script and return its output.
-            Returns SCRIPT_SUCCESS or SCRIPT_FAILED.
             Args:
                 script_path: absolute path returned by write_script
                 stage: 'validation', 'transformation', or 'retrieval' — which stage this script belongs to
@@ -495,83 +428,49 @@ class ValidatorTools:
             return _self.execute_script(script_path, stage)
 
         @tool
-        def write_transformation_report(
-            source_file: str,
-            output_file: str,
-            total_rows_input: int,
-            total_rows_output: int,
-            quarantined_rows: int,
-            transformations_applied: list[dict],
-            inferred_rules: bool,
-            summary: str,
-        ) -> str:
+        def write_validated_data(source_path: str) -> str:
             """
-            Write a structured transformation report to workspace/logs/transformation_report.json.
+            Copy the validated CSV to workspace/output/validated_data.csv.
+            Only call this when validation status is PASS.
             Args:
-                source_file: absolute path to the bronze source file
-                output_file: absolute path to the transformed temp file
-                total_rows_input: total rows in the bronze file
-                total_rows_output: rows in temp after transformation
-                quarantined_rows: rows sent to quarantine (0 at this stage)
-                transformations_applied: list of dicts with operation, columns, rows_affected, reason
-                inferred_rules: true if any rules were LLM-inferred
-                summary: one sentence summary
+                source_path: absolute path to the validated CSV file
             """
-            return _self.write_transformation_report(
-                TransformationReport(
-                    source_file=source_file,
-                    output_file=output_file,
-                    total_rows_input=total_rows_input,
-                    total_rows_output=total_rows_output,
-                    quarantined_rows=quarantined_rows,
-                    transformations_applied=[
-                        TransformationEntry(**t) for t in transformations_applied
-                    ],
-                    inferred_rules=inferred_rules,
-                    summary=summary,
-                )
-            )
+            return _self.write_validated_data(source_path)
 
         @tool
         def write_validation_report(
             status: str,
             row_count: int,
             column_count: int,
-            validation_violations: list[str],
-            quarantined_rows: int,
+            errors: list[str],
             summary: str,
             source_file: str,
         ) -> str:
             """
-            Append the validation report to workspace/logs/validation_report.json.
+            Append the validation report for this file to workspace/logs/validation_report.json.
             Args:
                 status: 'PASS' or 'FAIL'
-                row_count: valid rows promoted to silver
-                column_count: number of columns
-                validation_violations: list of validation errors, empty if PASS
-                summary: one sentence summary
-                source_file: absolute path to the bronze file
+                row_count: total number of rows in the dataset
+                column_count: total number of columns in the dataset
+                errors: list of validation errors found, empty if PASS
+                summary: one sentence summary of the result
+                source_file: the absolute path of the file that was validated
             """
             return _self.write_validation_report(
                 ValidationReport(
                     status=status,
                     row_count=row_count,
                     column_count=column_count,
-                    validation_violations=validation_violations,
-                    quarantined_rows=quarantined_rows,
+                    errors=errors,
                     summary=summary,
                 ),
                 source_file=source_file,
             )
 
         return [
-            load_validation_rules,
             read_sample,
-            get_execution_plan,
-            generate_plugin,
-            run_transformation,
             write_script,
             execute_script,
-            write_transformation_report,
             write_validation_report,
+            write_validated_data,
         ]
