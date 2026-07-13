@@ -64,9 +64,16 @@ class ValidatorResult(BaseModel):
     report_path: str | None = Field(
         default=None, description="Absolute path to the validation report JSON file."
     )
-    errors: list[str] = Field(
-        default_factory=list, description="Validation errors found in the data."
+    validation_violations: list[str] = Field(
+        default_factory=list,
+        description="Validation violations found in the data. For example, ['Column \"age\" has null values', 'Column \"salary\" has negative values']",
     )
+
+    errors: list[ErrorReport] = Field(
+        default_factory=list,
+        description="Any script crash errors or mismatch errors encountered during validation. For example, ['SCRIPT_FAILED', 'Column age missing from transformed output']",
+    )
+
     summary: str = Field(description="One sentence summary of the validation result.")
 
 
