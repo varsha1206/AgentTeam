@@ -1,8 +1,6 @@
-# src/agentteam/agents/validator_agent.py
-
 """
-Validator Agent: inspects retrieval output, infers schema, generates and
-executes a validation script, and reports structured errors into GraphState.
+Repair Agent: reads failing scripts and error context, generates patched
+scripts, executes them, and routes back to the appropriate agent.
 """
 
 import logging
@@ -14,7 +12,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import SystemMessage
 from omegaconf import DictConfig
 
-from agentteam.tools.validation_agent.validator_tools import ValidatorTools
+from agentteam.tools.repair_agent.repair_tools import RepairTools
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -23,11 +21,11 @@ with warnings.catch_warnings():
 logger = logging.getLogger(__name__)
 
 
-class ValidationAgent:
+class RepairAgent:
     """
-    Agent responsible for validating data produced by the Retrieval Agent.
-    Infers schema from data, generates a validation script, executes it,
-    and writes a structured report into the workspace.
+    Agent responsible for patching failing pipeline scripts.
+    Reads the failing script and error context, generates a patched version,
+    and executes it.
     """
 
     def __init__(self, llm_model: BaseChatModel, workspace: Path):
@@ -37,36 +35,28 @@ class ValidationAgent:
         self.workspace = workspace
         self.llm_model = llm_model
         self.cfg: DictConfig = self._load_config()
-        self.tools = ValidatorTools(
-            bronze_dir=workspace / "output/bronze",
-            silver_dir=workspace / "output/silver",
-            quarantine_dir=workspace / "output" / "quarantine",
+        self.tools = RepairTools(
             generated_dir=workspace / "generated",
-            temp_dir=workspace / "temp",
             logs_dir=workspace / "logs",
-            rules_path=workspace.parent / "configs" / "validation_rules.yaml",
-            plugins_dir=workspace / "plugins",
-            llm=self.llm_model,
+            temp_dir=workspace / "temp",
         )
         self.app = self._build_app()
 
     def _load_config(self) -> DictConfig:
         with hydra.initialize(version_base=None, config_path="../../../configs"):
-            logger.info("Loading validation agent config...")
+            logger.info("Loading repair agent config...")
             cfg = hydra.compose(
                 config_name="config",
-                overrides=["agents/validation=default"],
+                overrides=["agents/repair=default"],
             )
-            logger.info("Validation agent config loaded successfully")
-            return cfg.agents.validation
+            logger.info("Repair agent config loaded successfully")
+            return cfg.agents.repair
 
     def _build_prompt(self) -> SystemMessage:
         prompt = self.cfg.system_prompt.format(
             generated_dir=self.tools.generated_dir,
-            logs_dir=self.tools.logs_dir,
-            silver_dir=self.tools.silver_dir,
-            quarantine_dir=self.tools.quarantine_dir,
             temp_dir=self.tools.temp_dir,
+            logs_dir=self.tools.logs_dir,
         )
         return SystemMessage(
             content=[
@@ -79,10 +69,10 @@ class ValidationAgent:
             model=self.llm_model,
             tools=self.tools.as_tools(),
             prompt=self._build_prompt(),
-            name="validation_agent",
+            name="repair_agent",
         )
 
 
-def validation_agent_app(llm_model: BaseChatModel, workspace: Path):
+def repair_agent_app(llm_model: BaseChatModel, workspace: Path):
     """Factory function — returns the compiled Pregel app."""
-    return ValidationAgent(llm_model, workspace).app
+    return RepairAgent(llm_model, workspace).app

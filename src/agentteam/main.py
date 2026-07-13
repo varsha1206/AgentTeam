@@ -3,16 +3,45 @@ main.py - Test entrypoint for the AgentTeam pipeline
 """
 
 import logging
+import uuid
 from pathlib import Path
 
 import colorlog
 
 from agentteam.agents.orchestrator_agent import Orchestrator
+from agentteam.utils.plugin_registry import PluginRegistry
+
+
+def get_project_root() -> Path:
+    """
+    Returns project root (AgentTeam/).
+    src/agentteam/main.py -> goes up 3 levels
+    """
+    return Path(__file__).resolve().parents[2]
 
 
 def setup_logging():
-    handler = colorlog.StreamHandler()
-    handler.setFormatter(
+    workspace = get_project_root() / "workspace"
+    logs_dir = workspace / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    log_file = logs_dir / "execution.log"
+
+    # overwrite log on every run
+    file_handler = logging.FileHandler(
+        log_file,
+        mode="w",
+        encoding="utf-8",
+    )
+    file_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s %(levelname)-8s %(name)s: %(message)s",
+            datefmt="%H:%M:%S",
+        )
+    )
+
+    console_handler = colorlog.StreamHandler()
+    console_handler.setFormatter(
         colorlog.ColoredFormatter(
             "%(log_color)s%(asctime)s %(levelname)-8s %(name)s: %(message)s%(reset)s",
             datefmt="%H:%M:%S",
@@ -28,7 +57,9 @@ def setup_logging():
 
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
-    root_logger.handlers = [handler]
+    root_logger.handlers.clear()
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
 
     # quiet down noisy libraries
     logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -39,20 +70,10 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-def get_project_root() -> Path:
-    """
-    Returns project root (AgentTeam/).
-    src/agentteam/main.py -> goes up 3 levels
-    """
-
-    return Path(__file__).resolve().parents[2]
-
-
 def create_workspace() -> Path:
     """
     Ensure workspace structure exists.
     """
-
     root = get_project_root()
     workspace = root / "workspace"
 
@@ -61,6 +82,8 @@ def create_workspace() -> Path:
         "generated",
         "output/bronze",
         "output/silver",
+        "output/quarantine",
+        "plugins",
         "logs",
         "temp",
     ]
@@ -76,7 +99,7 @@ def stream_pipeline(stream) -> dict:
     Consume a pipeline stream, logging each agent message as it arrives.
     Returns the final state.
     """
-    logger.info("===== STREAMING PIPELINE =====\n")
+    print("===== STREAMING PIPELINE =====\n")
     final_chunk = {}
 
     for chunk in stream:
@@ -92,19 +115,19 @@ def stream_pipeline(stream) -> dict:
         label = f"{role}/{name}" if name else role
 
         if isinstance(content, str) and content.strip():
-            logger.info(f"[{label}]\n{content}\n")
+            print(f"[{label}]\n{content}\n")
         elif isinstance(content, list):
             for block in content:
                 if not isinstance(block, dict):
                     continue
                 if block.get("type") == "text" and block.get("text", "").strip():
-                    logger.info(f"[{label}]\n{block['text']}\n")
+                    print(f"[{label}]\n{block['text']}\n")
                 elif block.get("type") == "tool_use":
-                    logger.info(
+                    print(
                         f"[tool_call/{block['name']}] input={block.get('input', {})}\n"
                     )
                 elif block.get("type") == "tool_result":
-                    logger.info(f"[tool_result]\n{block.get('content', '')}\n")
+                    print(f"[tool_result]\n{block.get('content', '')}\n")
 
     return final_chunk
 
@@ -113,63 +136,64 @@ def log_final_state(result: dict) -> None:
     """
     Log the final graph state after pipeline completion.
     """
+    print("===== FINAL STATE =====\n")
 
-    logger.info("===== FINAL STATE =====\n")
-
-    skip_keys = {"messages"}  # already logged during streaming
+    skip_keys = {"messages"}
 
     for key, value in result.items():
         if key in skip_keys:
             continue
-        logger.info(f"[{key}]\n{value}\n")
+        print(f"[{key}]\n{value}\n")
 
 
 def main():
     workspace_path = get_project_root() / "workspace"
 
+    registry = PluginRegistry(workspace_path / "plugins")
+    registry.load_all()
+
     if not workspace_path.exists():
         raise FileNotFoundError(f"Workspace not found at {workspace_path}")
 
-    # -----------------------------
-    # Build orchestrator
-    # -----------------------------
     orchestrator = Orchestrator(workspace=workspace_path)
 
-    # -----------------------------
-    # Initial state
-    # -----------------------------
     initial_state = {
         "messages": [
             {
                 "role": "user",
                 "content": (
                     "Retrieve the dataset from the input folder. "
-                    "Read all available CSV files, summarise their contents, "
+                    "Read all available files, summarise their contents, "
                     "and write the raw data to the output folder."
                 ),
             }
         ],
-        "raw_input": str(workspace_path / "input" / "sample.csv"),
+        "raw_input": str(workspace_path / "input" / "employee_data.csv"),
         "workspace_path": workspace_path,
         "execution_plan": [],
         "final_output": None,
         "retrieved_data": {},
         "validated_data": {},
         "repaired_data": {},
+        "bronze_layer": [],
+        "silver_layer": [],
+        "quarantine_layer": [],
+        "repair_target": None,
+        "repair_error": None,
+        "repair_attempts": 0,
         "errors": [],
         "artifacts": {},
         "metadata": {
-            "run_id": "test-run-001",
+            "run_id": str(uuid.uuid4()),
             "environment": "local",
         },
+        "repair_script_path": None,
     }
 
-    # -----------------------------
-    # Run + stream
-    # -----------------------------
     result = stream_pipeline(
         orchestrator.stream(initial_state, thread_id="test-thread-001")
     )
+
     log_final_state(result)
 
 
