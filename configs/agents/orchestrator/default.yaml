@@ -48,10 +48,7 @@ routing_prompt: |
   Available next nodes: validation_agent, repair_agent, end.
   If status is complete and no errors, route to the next logical agent in the pipeline.
   If retrieval completed, route to validation_agent.
-  If validation passed (no script crash or schema mismatch errors), route to end.
-  If validation failed (only when script crashed or schema mismatches), route to repair_agent.
+  If validation passed (no errors), route to end.
+  If validation failed (errors present), route to repair_agent.
   If anything failed, route to end.
   Decide the next node.
-
-  # Rules:
-  - Do not route to repair_agent if validation failed due to validation violations, for example Column has null values etc.
