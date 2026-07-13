@@ -25,6 +25,19 @@
 - Files that pass validation are written to silver layer, tracked in silver_layer list in GraphState
 - Added colorlog for colored console output, suppressed noisy httpx/anthropic INFO logs
 
+### Rule Executor Refactor
+
+- Introduced deterministic RuleExecutor to execute known transformation rules without LLM involvement
+- Refactored transformation execution from generated Python scripts to deterministic Python functions
+- Every supported TransformationRule now maps directly to a registered operation
+- Added registry pattern so transformation operations can be registered dynamically
+- RuleExecutor applies transformations sequentially according to FileValidationRules
+- LLM now produces FileValidationRules only; execution is handled entirely by deterministic code
+- Transformation logic is now independently unit-testable without requiring an LLM
+- Separation established between intelligent planning (LLM) and deterministic execution (RuleExecutor)
+- Began redesign of Repair Agent to modify FileValidationRules instead of patching generated Python scripts
+- Added repair-safe validation flow so dataset violations do not automatically trigger repair
+- Designed hybrid execution architecture where unsupported transformations can later be generated as reusable plugins by the LLM while supported operations remain deterministic
 
 ## Architecture
 
@@ -32,9 +45,11 @@
 - **Orchestrator** — custom StateGraph, owns routing logic, wraps each agent in a node that writes to GraphState
 - **RetrievalAgent** — create_react_agent, tools: list_input_files, write_script, execute_script
 - **RetrievalTools** — plain Python class, all file IO, independently testable without LLM
-- **Structured outputs** — GeneratedScript, RetrievalResult, RoutingDecision, ValidationReport
+- **ValidatorAgent** — create_react_agent responsible for rule inference and validation workflow
+- **RuleExecutor** — deterministic transformation engine applying registered TransformationRules without LLM execution
+- **Structured outputs** — GeneratedScript, RetrievalResult, RoutingDecision, ValidationReport, TransformationReport, FileValidationRules, AgentInstruction
 - **GraphState** — shared Pydantic state: raw_input, retrieved_data, validated_data, repaired_data, bronze_layer, silver_layer, errors, artifacts, metadata
-- **Workspace** — input/, output/bronze/, output/silver/, generated/, logs/, temp/
+- **Workspace** — input/, output/bronze/, output/silver/, output/quarantine/, generated/, logs/, temp/
 - **Config** — Hydra YAML per agent (system_prompt, temperature, max_iterations)
 
 
