@@ -5,6 +5,7 @@ Tools for the Retrieval Agent.
 Responsible for file discovery, reading, and writing within the workspace.
 """
 
+import json
 import logging
 import subprocess
 from pathlib import Path
@@ -93,13 +94,19 @@ class RetrievalTools:
         return str(script_path)
 
     def execute_script(self, script_path: str) -> str:
-        """
-        Execute a Python script via subprocess.
-        Returns stdout on success, stderr on failure.
-        """
+        """Execute a retrieval script and return its output."""
         path = Path(script_path)
+
         if not path.exists():
-            return f"ERROR: Script not found at {path}"
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": "retrieval",
+                    "error": f"Script not found at {script_path}",
+                    "script_path": script_path,
+                }
+            )
+
         try:
             result = subprocess.run(
                 ["python", str(path)],
@@ -108,15 +115,52 @@ class RetrievalTools:
                 timeout=30,
                 encoding="utf-8",
             )
+
             if result.returncode != 0:
-                logger.error(f"Script failed: {result.stderr}")
-                return f"ERROR (exit {result.returncode}):\n{result.stderr}"
+                logger.error(f"Retrieval script failed: {path} — {result.stderr[:200]}")
+                return json.dumps(
+                    {
+                        "SCRIPT_FAILED": True,
+                        "stage": "retrieval",
+                        "error": result.stderr,
+                        "script_path": str(path),
+                    }
+                )
+
+            output = result.stdout.strip()
             logger.info(f"Script executed successfully: {path}")
-            return result.stdout or "Script completed with no output."
+
+            try:
+                json.loads(output)
+                return f"SCRIPT_SUCCESS:\n{output}"
+            except json.JSONDecodeError:
+                return json.dumps(
+                    {
+                        "SCRIPT_FAILED": True,
+                        "stage": "retrieval",
+                        "error": f"Script ran but did not print valid JSON. Raw output: {output[:300]}",
+                        "script_path": str(path),
+                    }
+                )
+
         except subprocess.TimeoutExpired:
-            return "ERROR: Script timed out after 30 seconds"
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": "retrieval",
+                    "error": "Script timed out after 30 seconds",
+                    "script_path": str(path),
+                }
+            )
         except Exception as e:
-            return f"ERROR: {e}"
+            return json.dumps(
+                {
+                    "SCRIPT_FAILED": True,
+                    "stage": "retrieval",
+                    "error": str(e),
+                    "script_path": str(path),
+                }
+            )
 
     # -----------------------------
     # LangChain tool bindings
