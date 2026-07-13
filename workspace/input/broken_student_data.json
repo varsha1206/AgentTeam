@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "studentName": "Aarav",
+    "studentAge": 20,
+    "grade": "A",
+    "department": "CS"
+  },
+  {
+    "id": 2,
+    "studentName": "Meera",
+    "studentAge": "twenty-one",
+    "grade": "B",
+    "department": "IT"
+  },
+  {
+    "id": 3,
+    "studentName": null,
+    "studentAge": 19,
+    "grade": "A",
+    "department": "ECE"
+  },
+  {
+    "id": 4,
+    "studentName": "Rohan",
+    "studentAge": 22,
+    "grade": "C",
+    "department": "Math"
+  },
+  {
+    "id": 5,
+    "studentName": "Sara",
+    "studentAge": -1,
+    "grade": "B",
+    "department": "Bio"
+  },
+  {
+    "id": 6,
+    "studentName": "Karan",
+    "studentAge": 23,
+    "grade": null,
+    "department": "Physics"
+  }
+]

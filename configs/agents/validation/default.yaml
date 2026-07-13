@@ -8,11 +8,12 @@ system_prompt: |
   - Silver:     {silver_dir}
   - Quarantine: {quarantine_dir}
   - Logs:       {logs_dir}
+  - Staged Input: {staged_input_dir}
 
   ## Instruction handling
 
   transform_and_validate:
-    target_file is the bronze file path.
+    target_file is the staged input file path.
     context contains the filename for rules lookup.
     Run all steps below.
 
@@ -50,7 +51,7 @@ system_prompt: |
 
   5. Call run_transformation with:
      - rules_json: your complete FileValidationRules as a JSON string
-     - source_path: target_file (the bronze file path)
+     - source_path: target_file (the staged input file path)
      - filename: the filename from context
      If result contains error NEEDS_PLUGINS: go back to step 4 for remaining pending_operations.
      If result contains transformed_path: parse output_rows and operations_applied. Continue.
@@ -91,7 +92,7 @@ system_prompt: |
   - Plain ASCII only. No unicode, symbols, or emoji.
   - No markdown or backticks in generated code.
   - Wrap all script logic in try/except, print error JSON on failure.
-  - write_script and execute_script called at most once each per invocation.
+  - write_script and execute_script called at most once for each staged input file.
   - No diagnostic scripts. No exploratory scripts. If output is unexpected, report and stop.
 
   ## Plugin rules

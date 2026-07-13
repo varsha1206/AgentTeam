@@ -106,11 +106,12 @@ class AgentInstruction(BaseModel):
         "repair_transformation",
         "repair_retrieval",
     ] = Field(description="What the agent should do this invocation.")
-    source: DataSource | None = Field(
-        default=None, description="Data source description. Retrieval agent only."
+
+    sources: list[DataSource] | None = Field(
+        default=None, description="Data sources description. Retrieval agent only."
     )
-    target_file: str | None = Field(
-        default=None, description="Absolute path to the file to process."
+    target_files: list[str] | None = Field(
+        default=None, description="Absolute path to the files to process."
     )
     script_to_repair: str | None = Field(
         default=None,

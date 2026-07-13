@@ -46,6 +46,7 @@ class ValidatorTools:
         rules_path: Path,
         temp_dir: Path,
         plugins_dir: Path,
+        staged_input_dir: Path,
         llm: BaseChatModel,
     ):
         self.bronze_dir = bronze_dir
@@ -54,6 +55,7 @@ class ValidatorTools:
         self.generated_dir = generated_dir
         self.logs_dir = logs_dir
         self.temp_dir = temp_dir
+        self.staged_input_dir = staged_input_dir
         self.rules_path = rules_path
         self.plugin_registry = PluginRegistry(plugins_dir)
         self.planner = ExecutionPlanner(self.plugin_registry)
@@ -69,6 +71,7 @@ class ValidatorTools:
             self.logs_dir,
             self.temp_dir,
             self.quarantine_dir,
+            self.staged_input_dir,
         ]:
             if not path.exists():
                 raise FileNotFoundError(f"Required directory not found at {path}")
@@ -423,7 +426,7 @@ class ValidatorTools:
             """
             Read the first 20 rows of a CSV file for schema inference.
             Args:
-                file_path: absolute path to the bronze file
+                file_path: absolute path to the staged input file
             """
             return _self.read_sample(file_path)
 
@@ -435,7 +438,7 @@ class ValidatorTools:
             Call this after producing the complete FileValidationRules.
             Args:
                 rules_json: complete FileValidationRules as a JSON string
-                source_path: absolute path to the bronze
+                source_path: absolute path to the staged input file to be transformed
             """
             return _self.get_execution_plan(rules_json, source_path)
 
@@ -460,7 +463,7 @@ class ValidatorTools:
             If any operations need plugin generation first, returns {error: NEEDS_PLUGINS, pending_operations: [...]}
             Args:
                 rules_json: complete FileValidationRules as a JSON string
-                source_path: absolute path to the bronze file
+                source_path: absolute path to the staged input file
                 filename: just the filename e.g. 'employee_data.csv'
             """
             return _self.run_transformation(rules_json, source_path, filename)
@@ -508,9 +511,9 @@ class ValidatorTools:
             """
             Write a structured transformation report to workspace/logs/transformation_report.json.
             Args:
-                source_file: absolute path to the bronze source file
+                source_file: absolute path to the staged input source file
                 output_file: absolute path to the transformed temp file
-                total_rows_input: total rows in the bronze file
+                total_rows_input: total rows in the staged input file
                 total_rows_output: rows in temp after transformation
                 quarantined_rows: rows sent to quarantine (0 at this stage)
                 transformations_applied: list of dicts with operation, columns, rows_affected, reason
@@ -550,7 +553,7 @@ class ValidatorTools:
                 column_count: number of columns
                 validation_violations: list of validation errors, empty if PASS
                 summary: one sentence summary
-                source_file: absolute path to the bronze file
+                source_file: absolute path to the staged input file
             """
             return _self.write_validation_report(
                 ValidationReport(

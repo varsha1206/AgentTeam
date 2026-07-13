@@ -86,6 +86,7 @@ def create_workspace() -> Path:
         "plugins",
         "logs",
         "temp",
+        "staged_input",
     ]
 
     for d in required_dirs:

@@ -39,6 +39,7 @@ class RetrievalAgent:
             input_dir=workspace / "input",
             bronze_dir=workspace / "output" / "bronze",
             generated_dir=workspace / "generated",
+            staged_input_dir=workspace / "staged_input",
         )
         self.app = self._build_app()
 
