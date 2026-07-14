@@ -43,7 +43,7 @@ class ValidatorTools:
         quarantine_dir: Path,
         generated_dir: Path,
         logs_dir: Path,
-        rules_path: Path,
+        rules_dir_path: Path,
         temp_dir: Path,
         plugins_dir: Path,
         staged_input_dir: Path,
@@ -56,7 +56,7 @@ class ValidatorTools:
         self.logs_dir = logs_dir
         self.temp_dir = temp_dir
         self.staged_input_dir = staged_input_dir
-        self.rules_path = rules_path
+        self.rules_dir_path = rules_dir_path
         self.plugin_registry = PluginRegistry(plugins_dir)
         self.planner = ExecutionPlanner(self.plugin_registry)
         self._validate_dirs()
@@ -95,9 +95,10 @@ class ValidatorTools:
 
     def load_validation_rules(self, filename: str) -> str:
         """Load validation rules and return as FileValidationRules JSON."""
-
-        if not self.rules_path.exists():
-            logger.warning(f"Rules file not found at {self.rules_path}")
+        filename_without_ext = Path(filename).stem
+        rules_path = self.rules_dir_path / f"{filename_without_ext}.yaml"
+        if not rules_path.exists():
+            logger.warning(f"Rules file not found at {rules_path}")
             return FileValidationRules(
                 filename=filename,
                 schema={},
@@ -105,17 +106,16 @@ class ValidatorTools:
                 inferred=True,
             ).model_dump_json(indent=2)
 
-        raw = yaml.safe_load(self.rules_path.read_text(encoding="utf-8"))
+        raw = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
 
         global_rules = raw.get("global_rules", {})
-        file_rules = raw.get("rules", {}).get(filename, {})
 
-        file_schema = file_rules.get("schema", {})
-        file_overrides = file_rules.get("overrides", {})
+        file_schema = raw.get("schema", {})
+        file_transformations = raw.get("transformations", [])
 
-        merged_transformations = global_rules.get(
-            "transformations", []
-        ) + file_overrides.get("transformations", [])
+        merged_transformations = (
+            global_rules.get("transformations", []) + file_transformations
+        )
 
         result = FileValidationRules(
             filename=filename,
@@ -264,30 +264,7 @@ class ValidatorTools:
         script_path.write_text(script.code, encoding="utf-8")
         logger.info(f"Validation script written: {script_path} — {script.description}")
 
-        # silently corrupt for testing — agent does not see this
-        if self._should_inject_error(script.filename):
-            corrupted = "this is not valid python!!!\n" + script.code
-            script_path.write_text(corrupted, encoding="utf-8")
-            logger.debug(
-                f"Test error injected into {script.filename}"
-            )  # DEBUG not WARNING
-
         return str(script_path)
-
-    def _should_inject_error(self, filename: str) -> bool:
-        if not self.rules_path.exists():
-            return False
-        try:
-            raw = yaml.safe_load(self.rules_path.read_text(encoding="utf-8"))
-            stem = filename.replace("validation_", "").replace(".py", ".csv")
-            return (
-                raw.get("rules", {})
-                .get(stem, {})
-                .get("test", {})
-                .get("inject_script_error", False)
-            )
-        except Exception:
-            return False
 
     def execute_script(self, script_path: str, stage: str = "unknown") -> str:
         """Execute a script and return its output."""

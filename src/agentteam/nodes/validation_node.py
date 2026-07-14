@@ -31,8 +31,15 @@ class ValidationNode(BaseAgentNode):
         logger.info("Cleared stale reports")
 
     def build_instructions(self, state: GraphState) -> list[HumanMessage]:
-        bronze_files = state.get("bronze_layer", [])
-        revalidation = state.get("repair_target") is None and state.get("repaired_data")
+        staged_input_dir = self.workspace / "staged_input"
+        staged_input_files = list(staged_input_dir.glob("*"))
+        # revalidation = state.get("repair_target") is None and state.get("repaired_data")
+        repair_target = state.get("repair_target")
+        if repair_target == "validation" and state.get("repaired_data"):
+            revalidation = True
+        else:
+            print(f"repaired target: {repair_target}")
+            revalidation = False
 
         if revalidation:
             # after repair — validate only, skip transformation
@@ -44,7 +51,7 @@ class ValidationNode(BaseAgentNode):
                     ),
                     context=f"filename for rules lookup: {Path(f).name}",
                 )
-                for f in bronze_files
+                for f in staged_input_files
             ]
 
         return [
@@ -53,7 +60,7 @@ class ValidationNode(BaseAgentNode):
                 target_file=file_path,
                 context=f"filename for rules lookup: {Path(file_path).name}",
             )
-            for file_path in bronze_files
+            for file_path in staged_input_files
         ]
 
     def parse_result(self, messages: list) -> ValidatorResult:
@@ -67,9 +74,10 @@ class ValidationNode(BaseAgentNode):
         silver_dir = self.workspace / "output" / "silver"
         all_errors = [e for r in results for e in r.errors]
         silver_files = []
-        bronze_files = state.get("bronze_layer", [])
+        staged_input_dir = self.workspace / "staged_input"
+        staged_input_files = list(staged_input_dir.glob("*"))
 
-        for file_path, result in zip(bronze_files, results):
+        for file_path, result in zip(staged_input_files, results):
             if result.validation_outcome == "PASS":
                 stem = Path(file_path).stem
                 matches = list(silver_dir.glob(f"*{stem}*"))
@@ -106,9 +114,12 @@ class ValidationNode(BaseAgentNode):
         agent = self.get_agent()
 
         def node(state: GraphState) -> dict:
-            bronze_files = state.get("bronze_layer", [])
-            if not bronze_files:
-                logger.warning("No bronze layer files to validate")
+            staged_input_dir = self.workspace / "staged_input"
+            staged_input_files = list(staged_input_dir.glob("*"))
+            staged_input_filenames = [f.name for f in staged_input_files]
+
+            if not staged_input_files:
+                logger.warning("No staged input files to validate")
                 empty = ValidatorResult(
                     status="failed",
                     validation_outcome="FAIL",
@@ -140,7 +151,7 @@ class ValidationNode(BaseAgentNode):
             repair_error = None
             repair_script_path = None
 
-            for instruction, file_path in zip(instructions, bronze_files):
+            for instruction, file_path in zip(instructions, staged_input_filenames):
                 messages = self._invoke_agent(agent, instruction)
                 all_messages.extend(messages)
                 all_results.append(self.parse_result(messages))

@@ -1,0 +1,13 @@
+schema:
+  id:
+    type: int
+    nullable: false
+
+  salary:
+    type: float
+    nullable: false
+    min: 0
+transformations:
+  - operation: create_unique_employee_id
+    selection: infer
+    description: Create a hash id

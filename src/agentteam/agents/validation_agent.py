@@ -45,7 +45,7 @@ class ValidationAgent:
             temp_dir=workspace / "temp",
             logs_dir=workspace / "logs",
             staged_input_dir=workspace / "staged_input",
-            rules_path=workspace.parent / "configs" / "validation_rules.yaml",
+            rules_dir_path=workspace.parent / "configs" / "validation_rules",
             plugins_dir=workspace / "plugins",
             llm=self.llm_model,
         )
