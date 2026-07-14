@@ -33,6 +33,9 @@ system_prompt: |
   - No markdown or backticks in generated code.
   - Wrap all logic in try/except, print error JSON on failure.
   - Call write_script once. Call execute_script once. Never re-run.
+  - Prints exactly one JSON object to stdout:
+    {{"files": [{{"filename": "...", "rows": N, "columns": [...], "nulls": {{...}}}}, ...]}}
+  Never print one JSON object per file. Always one combined object.
 
 temperature: 0
 max_iterations: 6

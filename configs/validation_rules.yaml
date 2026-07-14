@@ -26,7 +26,7 @@ rules:
         type: str
         nullable: false
     test:
-      inject_script_error: true
+      inject_script_error: false
     overrides:
       transformations:
         - operation: rename_to_snake_case
