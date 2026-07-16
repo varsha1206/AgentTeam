@@ -1,0 +1,27 @@
+[
+  {
+    "status": "PASS",
+    "row_count": 3,
+    "column_count": 6,
+    "validation_violations": [
+      "Column employeeAge has non-integer value: abc",
+      "Column salary value -999.0 is below minimum 0.0",
+      "Column salary has non-float value: five thousand"
+    ],
+    "quarantined_rows": 3,
+    "summary": "Validation of broken_employee_data.csv complete: 3 valid rows promoted to silver, 3 rows quarantined due to type mismatches and constraint violations.",
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\broken_employee_data.csv"
+  },
+  {
+    "status": "PASS",
+    "row_count": 4,
+    "column_count": 5,
+    "validation_violations": [
+      "Column studentAge value twenty-one cannot be converted to int",
+      "Column studentAge value -1 is below minimum 18.0"
+    ],
+    "quarantined_rows": 2,
+    "summary": "Validation passed with 4 valid rows promoted to silver; 2 rows quarantined due to invalid studentAge values.",
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\broken_student_data.csv"
+  }
+]

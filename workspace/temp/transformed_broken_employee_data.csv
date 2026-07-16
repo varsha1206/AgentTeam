@@ -1,0 +1,7 @@
+id,employeeName,employeeAge,salary,department,employee_hash_id
+1,Alice,,50000.0,Eng,048efe2916a83e87
+2,Bob,abc,60000.0,HR,9728d18eea5d19fe
+3,,25,70000.0,Eng,504114e33c40675e
+4,Diana,28,-999.0,Sales,f5fbb27f1e1021e3
+1,Alice,30,five thousand,Eng,4fd0c28b8dfab173
+6,,45,67488,IT,dff4fb2b9afd0a2a

@@ -44,7 +44,8 @@ class ValidationAgent:
             generated_dir=workspace / "generated",
             temp_dir=workspace / "temp",
             logs_dir=workspace / "logs",
-            rules_path=workspace.parent / "configs" / "validation_rules.yaml",
+            staged_input_dir=workspace / "staged_input",
+            rules_dir_path=workspace.parent / "configs" / "validation_rules",
             plugins_dir=workspace / "plugins",
             llm=self.llm_model,
         )
@@ -67,6 +68,7 @@ class ValidationAgent:
             silver_dir=self.tools.silver_dir,
             quarantine_dir=self.tools.quarantine_dir,
             temp_dir=self.tools.temp_dir,
+            staged_input_dir=self.tools.staged_input_dir,
         )
         return SystemMessage(
             content=[

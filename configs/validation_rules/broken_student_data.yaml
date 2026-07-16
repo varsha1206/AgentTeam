@@ -1,0 +1,13 @@
+schema:
+  id:
+    type: int
+    nullable: false
+
+  student_age:
+    type: int
+    nullable: false
+    min: 18
+
+transformations:
+  - operation: normalize_grade
+    selection: infer

@@ -24,10 +24,17 @@ class RetrievalTools:
     All tools operate within the provided workspace directories.
     """
 
-    def __init__(self, input_dir: Path, bronze_dir: Path, generated_dir: Path):
+    def __init__(
+        self,
+        input_dir: Path,
+        bronze_dir: Path,
+        generated_dir: Path,
+        staged_input_dir: Path,
+    ):
         self.input_dir = input_dir
         self.bronze_dir = bronze_dir
         self.generated_dir = generated_dir
+        self.staged_input_dir = staged_input_dir
         self._validate_dirs()
 
     # -----------------------------
@@ -39,6 +46,10 @@ class RetrievalTools:
             raise FileNotFoundError(f"Input directory not found at {self.input_dir}")
         if not self.bronze_dir.exists():
             raise FileNotFoundError(f"Bronze directory not found at {self.bronze_dir}")
+        if not self.staged_input_dir.exists():
+            raise FileNotFoundError(
+                f"Staged input directory not found at {self.staged_input_dir}"
+            )
 
     # -----------------------------
     # Tools
@@ -70,6 +81,83 @@ class RetrievalTools:
             return df.to_string(index=False)
         except Exception as e:
             return f"ERROR reading {path}: {e}"
+
+    def read_json(self, file_path: str) -> str:
+        """
+        Read a JSON file and return its contents as a string.
+        Args:
+            file_path: absolute path as returned by list_input_files
+        """
+        path = Path(file_path)
+        if not path.exists():
+            return f"ERROR: File not found at {path}"
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            logger.info(f"Read {path} — {len(data)} top-level keys")
+            return json.dumps(data, indent=2)
+        except Exception as e:
+            return f"ERROR reading {path}: {e}"
+
+    def _read_csv(self, path: Path) -> pd.DataFrame:
+        """Read a CSV file."""
+        return pd.read_csv(path)
+
+    def _read_json(self, path: Path) -> pd.DataFrame:
+        """Read a JSON file."""
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        return pd.json_normalize(data)
+
+    def standardize_bronze_files_to_csv(self) -> str:
+        """
+        Convert every supported file in the bronze directory into CSV format.
+
+        Supported:
+        - .csv
+        - .json
+
+        Output:
+            workspace/staged_input/<original_name>.csv
+        """
+
+        self.staged_input_dir.mkdir(parents=True, exist_ok=True)
+
+        readers = {
+            ".csv": self._read_csv,
+            ".json": self._read_json,
+        }
+
+        for file_path in self.bronze_dir.iterdir():
+            if not file_path.is_file():
+                continue
+
+            reader = readers.get(file_path.suffix.lower())
+
+            if reader is None:
+                logger.warning("Skipping unsupported file: %s", file_path.name)
+                continue
+
+            try:
+                df = reader(file_path)
+
+                output_path = self.staged_input_dir / f"{file_path.stem}.csv"
+                df.to_csv(output_path, index=False)
+
+                logger.info(
+                    "Standardized %s -> %s",
+                    file_path.name,
+                    output_path.name,
+                )
+
+            except Exception as e:
+                logger.exception(
+                    "Failed to standardize %s: %s",
+                    file_path.name,
+                    e,
+                )
+        return f"Standardized files written to {self.staged_input_dir}"
 
     def write_output(self, filename: str, content: str) -> str:
         """
@@ -192,6 +280,15 @@ class RetrievalTools:
             return _self.read_csv(file_path)
 
         @tool
+        def standardize_bronze_files_to_csv() -> str:
+            """
+            Convert every supported file in the bronze directory into CSV format.
+            Supported: .csv, .json
+            Output: workspace/staged_input/<original_name>.csv
+            """
+            return _self.standardize_bronze_files_to_csv()
+
+        @tool
         def write_output(filename: str, content: str) -> str:
             """
             Write content to the outputs directory.
@@ -229,4 +326,11 @@ class RetrievalTools:
             """
             return _self.execute_script(script_path)
 
-        return [list_input_files, read_csv, write_output, write_script, execute_script]
+        return [
+            list_input_files,
+            read_csv,
+            write_output,
+            write_script,
+            execute_script,
+            standardize_bronze_files_to_csv,
+        ]

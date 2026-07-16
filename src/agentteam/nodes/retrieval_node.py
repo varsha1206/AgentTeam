@@ -23,19 +23,45 @@ class RetrievalNode(BaseAgentNode):
     def get_agent(self):
         return retrieval_agent_app(self.llm_model, self.workspace)
 
-    def build_instructions(self, state: GraphState) -> list[HumanMessage]:
-        input_files = list((self.workspace / "input").glob("*.csv"))
-        return [
-            self._build_agent_instruction(
-                task="full_pipeline",
-                source=DataSource(
+    def build_instructions(self, task: str, sources: list[DataSource]) -> HumanMessage:
+        return self._build_agent_instruction(
+            task=task,
+            sources=sources,
+        )
+
+    def _infer_data_source(self, input_file) -> DataSource | None:
+        """
+        Infer the data sources of the input files in the workspace.
+
+        Args:
+            input_file: Input file path.
+        Returns:
+            DataSource | None: A DataSource object representing the input file, or None if the file type is not supported.
+        """
+
+        file_type = input_file.suffix.lower()
+        match file_type:
+            case ".csv":
+                logger.info(f"Detected CSV file: {input_file.name}")
+                return DataSource(
                     source_type="csv",
-                    path=str(f),
-                    output_filename=f.name,
-                ),
-            )
-            for f in input_files
-        ]
+                    path=str(input_file),
+                    output_filename=input_file.name,
+                )
+
+            case ".json":
+                logger.info(f"Detected JSON file: {input_file.name}")
+                return DataSource(
+                    source_type="json",
+                    path=str(input_file),
+                    output_filename=input_file.name,
+                )
+
+            case _:
+                logger.warning(
+                    f"Unsupported file type: {input_file.suffix} for file {input_file.name}"
+                )
+                return None
 
     def parse_result(self, messages: list) -> RetrievalResult:
         return parse_retrieval_result(
@@ -64,30 +90,38 @@ class RetrievalNode(BaseAgentNode):
 
         def node(state: GraphState) -> dict:
             logger.info("Running retrieval agent...")
-            input_files = list((self.workspace / "input").glob("*.csv"))
+            input_files = list((self.workspace / "input").rglob("*"))
             all_messages = []
             all_results = []
             repair_target = None
             repair_error = None
             repair_script_path = None
+            data_sources: list[DataSource] = []
 
             for input_file in input_files:
-                instruction = self._build_agent_instruction(
-                    task="full_pipeline",
-                    source=DataSource(
-                        source_type="csv",
-                        path=str(input_file),
-                        output_filename=input_file.name,
-                    ),
+                data_source = self._infer_data_source(input_file)
+                logger.info(
+                    "Data source inferred for %s",
+                    data_source.path if data_source else "None",
                 )
-                messages = self._invoke_agent(agent, instruction)
-                all_messages.extend(messages)
-                all_results.append(self.parse_result(messages))
+                if data_source is None:
+                    logger.warning(f"Skipping unsupported file type: {input_file.name}")
+                    continue
+                data_sources.append(data_source)
 
-                if repair_target is None:
-                    repair_target, repair_error, repair_script_path = (
-                        self._detect_repair_needed(messages, str(input_file))
-                    )
+            logger.info(
+                f"Data sources for retrieval: {[ds.path for ds in data_sources]}"
+            )
+
+            instruction = self.build_instructions("full_pipeline", data_sources)
+            messages = self._invoke_agent(agent, instruction)
+            all_messages.extend(messages)
+            all_results.append(self.parse_result(messages))
+
+            if repair_target is None:
+                repair_target, repair_error, repair_script_path = (
+                    self._detect_repair_needed(messages, str(input_file))
+                )
 
             state_update = self.update_state(state, all_results)
             state_update["messages"] = all_messages
