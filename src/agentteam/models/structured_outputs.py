@@ -342,3 +342,22 @@ class RulesCache(BaseModel):
     source: Literal["user_defined", "llm_inferred", "hybrid"] = Field(
         description="Whether rules came from YAML, LLM inference, or both."
     )
+
+
+class SQLColumnSchema(BaseModel):
+    """SQL schema for a single column."""
+
+    column_name: str = Field(description="Exact column name from the CSV.")
+    sql_type: Literal["INTEGER", "REAL", "TEXT", "BOOLEAN"] = Field(
+        description="SQLite type for this column."
+    )
+    nullable: bool = Field(default=True)
+    is_primary_key: bool = Field(default=False)
+
+
+class SQLTableSchema(BaseModel):
+    """Inferred SQL schema for a CSV file."""
+
+    table_name: str = Field(description="Snake_case table name derived from filename.")
+    columns: list[SQLColumnSchema] = Field(description="One entry per column.")
+    source_filename: str = Field(description="The original CSV filename.")

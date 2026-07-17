@@ -1,4 +1,3 @@
-id,employeeName,employeeAge,salary,department,employee_hash_id,quarantine_reason
-2,Bob,abc,60000.0,HR,9728d18eea5d19fe,Column employeeAge has non-integer value: abc
-4,Diana,28,-999.0,Sales,f5fbb27f1e1021e3,Column salary value -999.0 is below minimum 0.0
-1,Alice,30,five thousand,Eng,4fd0c28b8dfab173,Column salary has non-float value: five thousand
+id,employeeName,employeeAge,salary,department,unique_employee_id,quarantine_reason
+4,Diana,28,-999.0,Sales,9718003d5a6d2301,Column salary value -999.0 is less than min 0.0
+1,Alice,30,five thousand,Eng,cd3231b4dc34a627,Column salary expected float but got five thousand

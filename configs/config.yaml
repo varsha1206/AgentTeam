@@ -3,3 +3,4 @@ defaults:
   - agents/retrieval: default
   - agents/validation: default
   - agents/repair: default
+  - storage/sqlite_store: default

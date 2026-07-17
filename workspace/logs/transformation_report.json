@@ -10,29 +10,10 @@
         "operation": "create_unique_employee_id",
         "columns": [],
         "rows_affected": 6,
-        "reason": "Create a hash-based unique employee identifier"
+        "reason": "Create a hash id"
       }
     ],
     "inferred_rules": true,
-    "summary": "Transformed broken_employee_data.csv with inferred schema for missing columns and applied create_unique_employee_id operation to all 6 rows."
-  },
-  {
-    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\broken_student_data.csv",
-    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_broken_student_data.csv",
-    "total_rows_input": 6,
-    "total_rows_output": 6,
-    "quarantined_rows": 0,
-    "transformations_applied": [
-      {
-        "operation": "normalize_grade",
-        "columns": [
-          "grade"
-        ],
-        "rows_affected": 6,
-        "reason": "Normalized grade values to uppercase"
-      }
-    ],
-    "inferred_rules": true,
-    "summary": "Transformed 6 rows with grade normalization applied to all records."
+    "summary": "Applied create_unique_employee_id transformation to all 6 rows with 5 inferred schema rules for missing columns."
   }
 ]

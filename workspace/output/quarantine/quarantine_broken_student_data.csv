@@ -1,3 +1,0 @@
-id,studentName,studentAge,grade,department,quarantine_reason
-2,Meera,twenty-one,B,IT,Column studentAge value twenty-one cannot be converted to int
-5,Sara,-1,B,Bio,Column studentAge value -1 is below minimum 18.0
