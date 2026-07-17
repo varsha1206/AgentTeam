@@ -9,6 +9,7 @@ from pathlib import Path
 import colorlog
 
 from agentteam.agents.orchestrator_agent import Orchestrator
+from agentteam.storage.sqlite_store import SQLiteStore
 from agentteam.utils.plugin_registry import PluginRegistry
 
 
@@ -196,6 +197,23 @@ def main():
     )
 
     log_final_state(result)
+
+    # Persist the run to SQLite
+    store = SQLiteStore(
+        db_path=workspace_path / "agentteam.db",
+        llm=orchestrator.llm_model,  # reuse the same LLM instance
+    )
+    store.run_persistance(
+        workspace_path=workspace_path,
+        repair_attempts=result.get("repair_attempts", 0),
+        repaired_data=result.get("repaired_data", {}),
+        run_id=result.get("metadata", {}).get("run_id", "unknown"),
+        started_at=result.get("metadata", {}).get("started_at", "unknown"),
+    )
+    summary = store.query_run_summary(
+        result.get("metadata", {}).get("run_id", "unknown")
+    )
+    logger.info(f"Run summary: {summary}")
 
 
 if __name__ == "__main__":

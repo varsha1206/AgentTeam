@@ -1,0 +1,15 @@
+  persistance_prompt: |
+    Infer the SQLite table schema for this CSV file.\n\n
+    Filename: {filename}\n
+    Table name should be: {table_name}\n\n
+    Column dtypes:\n{dtypes}\n\n
+    Null counts:\n{nulls}\n\n
+    Sample rows:\n{sample}\n\n
+    Rules:\n
+    - Use INTEGER for integer columns\n
+    - Use REAL for float/decimal columns\n
+    - Use TEXT for string, categorical, or mixed columns\n
+    - Use BOOLEAN for binary flag columns (0/1 or True/False)\n
+    - Mark id-like columns as is_primary_key=true only if they are unique identifiers\n
+    - Set nullable=false only for columns with 0 null values that are clearly required\n
+    - Column names must match the CSV column names exactly
