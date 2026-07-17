@@ -1,0 +1,19 @@
+[
+  {
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\broken_employee_data.csv",
+    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_broken_employee_data.csv",
+    "total_rows_input": 6,
+    "total_rows_output": 6,
+    "quarantined_rows": 0,
+    "transformations_applied": [
+      {
+        "operation": "create_unique_employee_id",
+        "columns": [],
+        "rows_affected": 6,
+        "reason": "Create a hash id for each employee record"
+      }
+    ],
+    "inferred_rules": true,
+    "summary": "Applied unique employee ID generation to all 6 records with inferred schema rules for missing columns."
+  }
+]

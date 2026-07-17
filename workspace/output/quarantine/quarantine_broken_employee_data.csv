@@ -1,0 +1,4 @@
+id,employeeName,employeeAge,salary,department,unique_employee_id,quarantine_reason
+2,Bob,abc,60000.0,HR,b7641907,Column employeeAge: cannot convert 'abc' to int
+4,Diana,28,-999.0,Sales,535c2940,Column salary: value -999.0 below minimum 0.0
+1,Alice,30,five thousand,Eng,a5337352,Column salary: cannot convert 'five thousand' to float

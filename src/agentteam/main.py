@@ -84,6 +84,7 @@ def create_workspace() -> Path:
         "output/bronze",
         "output/silver",
         "output/quarantine",
+        "configs/validation_rules",
         "plugins",
         "logs",
         "temp",
