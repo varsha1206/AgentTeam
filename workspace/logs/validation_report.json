@@ -1,15 +1,14 @@
 [
   {
     "status": "PASS",
-    "row_count": 3,
-    "column_count": 6,
+    "row_count": 4,
+    "column_count": 5,
     "validation_violations": [
-      "Column employeeAge: cannot convert 'abc' to int",
-      "Column salary: value -999.0 below minimum 0.0",
-      "Column salary: cannot convert 'five thousand' to float"
+      "salary is not float type",
+      "salary is less than min value 0.0"
     ],
-    "quarantined_rows": 3,
-    "summary": "Validated 6 employee records; 3 passed and promoted to silver, 3 quarantined due to type conversion and constraint violations.",
+    "quarantined_rows": 2,
+    "summary": "Validation completed with 4 valid rows promoted to silver and 2 rows quarantined due to salary violations.",
     "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\broken_employee_data.csv"
   }
 ]

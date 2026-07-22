@@ -10,10 +10,10 @@
         "operation": "create_unique_employee_id",
         "columns": [],
         "rows_affected": 6,
-        "reason": "Create a hash id for each employee record"
+        "reason": "create_unique_employee_id"
       }
     ],
     "inferred_rules": true,
-    "summary": "Applied unique employee ID generation to all 6 records with inferred schema rules for missing columns."
+    "summary": "Transformation applied create_unique_employee_id to 6 rows with inferred rules for employeeName, employeeAge, and department columns."
   }
 ]
