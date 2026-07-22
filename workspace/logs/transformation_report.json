@@ -11,9 +11,25 @@
         "columns": [],
         "rows_affected": 6,
         "reason": "Create a hash id"
+      },
+      {
+        "operation": "coerce_age_to_int",
+        "columns": [
+          "employeeAge"
+        ],
+        "rows_affected": 6,
+        "reason": "Coerce age to int"
+      },
+      {
+        "operation": "coerce_salary_to_float",
+        "columns": [
+          "salary"
+        ],
+        "rows_affected": 6,
+        "reason": "Coerce salary to float"
       }
     ],
     "inferred_rules": true,
-    "summary": "Applied create_unique_employee_id transformation to all 6 rows with 5 inferred schema rules for missing columns."
+    "summary": "Transformation pipeline applied 3 operations to broken_employee_data.csv, coercing age and salary types and creating unique employee identifiers."
   }
 ]

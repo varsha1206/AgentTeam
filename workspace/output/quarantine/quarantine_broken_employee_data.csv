@@ -1,3 +1,3 @@
 id,employeeName,employeeAge,salary,department,unique_employee_id,quarantine_reason
-4,Diana,28,-999.0,Sales,9718003d5a6d2301,Column salary value -999.0 is less than min 0.0
-1,Alice,30,five thousand,Eng,cd3231b4dc34a627,Column salary expected float but got five thousand
+4,Diana,28.0,-999.0,Sales,535c2940,Column salary value -999.0 is less than minimum 0.0
+1,Alice,30.0,,Eng,a5337352,Column salary is not nullable but contains null

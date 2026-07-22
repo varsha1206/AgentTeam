@@ -84,6 +84,7 @@ def create_workspace() -> Path:
         "output/bronze",
         "output/silver",
         "output/quarantine",
+        "configs/validation_rules",
         "plugins",
         "logs",
         "temp",
@@ -148,7 +149,7 @@ def log_final_state(result: dict) -> None:
         print(f"[{key}]\n{value}\n")
 
 
-def main():
+def run_pipeline():
     workspace_path = get_project_root() / "workspace"
 
     registry = PluginRegistry(workspace_path / "plugins")
@@ -214,6 +215,11 @@ def main():
         result.get("metadata", {}).get("run_id", "unknown")
     )
     logger.info(f"Run summary: {summary}")
+    return result, summary, "Pipeline completed!"
+
+
+def main():
+    run_pipeline()
 
 
 if __name__ == "__main__":
