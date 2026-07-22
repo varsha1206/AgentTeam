@@ -4,11 +4,11 @@
     "row_count": 4,
     "column_count": 5,
     "validation_violations": [
-      "salary is not float type",
-      "salary is less than min value 0.0"
+      "Column salary value -999.0 is less than minimum 0.0",
+      "Column salary is not nullable but contains null"
     ],
     "quarantined_rows": 2,
-    "summary": "Validation completed with 4 valid rows promoted to silver and 2 rows quarantined due to salary violations.",
+    "summary": "Validation completed with 4 valid rows promoted to silver and 2 rows quarantined due to salary constraint violations.",
     "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\broken_employee_data.csv"
   }
 ]
