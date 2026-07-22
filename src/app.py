@@ -1,4 +1,3 @@
-import csv
 import json
 import sqlite3
 import threading
@@ -26,10 +25,11 @@ output_dir = workspace / "output"
 DB_PATH = workspace / "agentteam.db"
 VALIDATION_REPORT_PATH = workspace / "logs" / "validation_report.json"
 TRANSFORMATION_REPORT_PATH = workspace / "logs" / "transformation_report.json"
-SURVEY_CSV_PATH = workspace / "survey_responses.csv"
 
 SILVER_TABLE_PREFIX = "silver_"
 QUARANTINE_TABLE_PREFIX = "quarantine_"
+
+NON_DEV_GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScsTXei6AVvJ6bdAst1EY8rbgBmaWu3DcNRGFGm1bBGb2DZYQ/viewform?usp=sharing&ouid=105111568914025434899"
 
 st.set_page_config(
     page_title="AgentTeam",
@@ -74,6 +74,15 @@ st.markdown(
   --text-main: #e5f2ea;
   --text-muted: #b2cbbb;
   --border: rgba(143, 211, 170, 0.18);
+
+  /* Secondary / navigation accent — a muted steel-blue that pairs with the
+     green primary accent without competing with it. */
+  --nav-bg: #1b2f36;
+  --nav-bg-hover: #223a42;
+  --nav-text: #bcd7de;
+  --nav-border: rgba(126, 178, 194, 0.30);
+  --nav-active-start: #7fb2c7;
+  --nav-active-end: #5a93a9;
 }
 
 .stApp{
@@ -127,7 +136,9 @@ box-shadow:0 10px 30px rgba(0, 0, 0, 0.18);
 color:var(--text-main);
 }
 
-.stButton>button{
+/* --- Primary buttons: the main call-to-action per page (green) --- */
+.stButton button[kind="primary"],
+.stLinkButton a[kind="primary"] {
 background:linear-gradient(180deg, var(--accent-soft), var(--accent));
 color:#0c1714;
 border:none;
@@ -137,9 +148,37 @@ font-weight:bold;
 box-shadow:0 10px 22px rgba(111, 191, 143, 0.18);
 }
 
-.stButton>button:hover{
+.stButton button[kind="primary"]:hover,
+.stLinkButton a[kind="primary"]:hover {
 background:linear-gradient(180deg, #b8ebc7, #89d9a7);
 color:#08120f;
+}
+
+/* --- Secondary buttons: plain / "schlicht" navigation & back actions --- */
+.stButton button[kind="secondary"] {
+background:var(--nav-bg);
+color:var(--nav-text);
+border:1px solid var(--nav-border);
+border-radius:0.7rem;
+height:42px;
+font-weight:600;
+box-shadow:none;
+}
+
+.stButton button[kind="secondary"]:hover {
+background:var(--nav-bg-hover);
+color:var(--accent-bright);
+border-color:var(--nav-border);
+}
+
+/* Disabled secondary button = the currently active page in the nav trail */
+.stButton button[kind="secondary"]:disabled {
+background:linear-gradient(180deg, var(--nav-active-start), var(--nav-active-end));
+color:#0c1714;
+border:none;
+opacity:1;
+cursor:default;
+font-weight:700;
 }
 
 .stDownloadButton>button{
@@ -213,26 +252,7 @@ color:var(--accent-bright);
 /* --- custom components --- */
 
 .nav-trail {
-display:flex;
-gap:0.5rem;
-margin-bottom:1.5rem;
-flex-wrap:wrap;
-}
-
-.nav-pill {
-padding:0.35rem 0.9rem;
-border-radius:999px;
-border:1px solid var(--border);
-background:var(--bg-panel);
-color:var(--text-muted);
-font-size:0.82rem;
-font-weight:600;
-}
-
-.nav-pill.active {
-background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
-color:var(--accent-bright);
-border-color:var(--accent-soft);
+margin-bottom:0.6rem;
 }
 
 .card {
@@ -322,12 +342,23 @@ PAGE_ORDER = [
 
 
 def render_nav_trail() -> None:
+    """Renders the page trail as clickable (but understated) nav buttons.
+    The current page shows as a highlighted, disabled pill."""
     current = st.session_state.page
-    pills = ""
-    for key, label in PAGE_ORDER:
-        cls = "nav-pill active" if key == current else "nav-pill"
-        pills += f'<span class="{cls}">{label}</span>'
-    st.markdown(f'<div class="nav-trail">{pills}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="nav-trail">', unsafe_allow_html=True)
+    cols = st.columns(len(PAGE_ORDER))
+    for col, (key, label) in zip(cols, PAGE_ORDER):
+        with col:
+            is_current = key == current
+            if st.button(
+                label,
+                key=f"navtrail_{key}",
+                use_container_width=True,
+                disabled=is_current,
+            ):
+                goto(key)
+                st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # =========================================================
@@ -457,28 +488,6 @@ def load_table_sample(table_name: str, limit: int = 5) -> pd.DataFrame | None:
         return None
 
 
-def submit_survey_response(row: dict) -> None:
-    """Appends a survey response to a local CSV.
-
-    TODO: to push responses straight to Google Sheets instead of / in addition
-    to the local CSV, wire this function up with gspread + a service account,
-    e.g.:
-
-        import gspread
-        gc = gspread.service_account(filename="credentials.json")
-        sheet = gc.open("AgentTeam Survey Responses").sheet1
-        sheet.append_row(list(row.values()))
-    """
-    SURVEY_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    file_exists = SURVEY_CSV_PATH.exists()
-
-    with open(SURVEY_CSV_PATH, "a", newline="") as file_handle:
-        writer = csv.DictWriter(file_handle, fieldnames=list(row.keys()))
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(row)
-
-
 # =========================================================
 # PAGE: HOME
 # =========================================================
@@ -544,7 +553,7 @@ table so nothing silently disappears.
 
     st.divider()
 
-    if st.button("🚀 Try it out", use_container_width=True):
+    if st.button("🚀 Try it out", use_container_width=True, type="primary"):
         goto("run")
         st.rerun()
 
@@ -642,7 +651,7 @@ def page_run() -> None:
 
     st.divider()
 
-    if st.button("Run Ingestion Pipeline", use_container_width=True):
+    if st.button("Run Ingestion Pipeline", use_container_width=True, type="primary"):
         placeholder = st.empty()
         result_holder = {}
 
@@ -676,7 +685,7 @@ def page_run() -> None:
         st.subheader("Final Agent Summary")
         st.write(st.session_state.pipeline_result["final_message"])
 
-        if st.button("📊 View Results", use_container_width=True):
+        if st.button("📊 View Results", use_container_width=True, type="primary"):
             goto("results")
             st.rerun()
 
@@ -831,7 +840,7 @@ def page_results() -> None:
 
     st.divider()
 
-    if st.button("📝 Rate this tool", use_container_width=True):
+    if st.button("📝 Rate this tool", use_container_width=True, type="primary"):
         goto("survey")
         st.rerun()
 
@@ -843,7 +852,7 @@ def page_results() -> None:
 
 def page_survey() -> None:
     st.title("📝 Quick Survey")
-    st.caption("Your feedback helps evaluate AgentTeam — it only takes a minute.")
+    st.caption("Your feedback helps evaluate AgentTeam.")
     render_nav_trail()
 
     if st.button("← Back to Results"):
@@ -851,58 +860,19 @@ def page_survey() -> None:
         st.rerun()
 
     st.markdown(
-        '<div class="card">Responses are stored for this evaluation and may '
-        "later be reviewed in aggregate. Thanks for trying AgentTeam!</div>",
+        '<div class="card">'
+        "Thanks for trying AgentTeam! Please take a moment to fill out our survey.<br><br>"
+        "We appreciate your time and feedback greatly!"
+        "</div>",
         unsafe_allow_html=True,
     )
 
-    with st.form("survey_form", clear_on_submit=True):
-        name = st.text_input("Your name", placeholder="Optional")
-        occupation = st.text_input("Your occupation", placeholder="Optional")
-        often_use = st.radio(
-            "How often do you work with data pipelines or ETL processes?",
-            options=[
-                "Daily",
-                "Weekly",
-                "Monthly",
-                "Rarely",
-                "Never",
-            ],
-            horizontal=True,
-        )
-        ease_of_use = st.slider(
-            "How easy was AgentTeam to use?", min_value=1, max_value=5, value=4
-        )
-        result_quality = st.slider(
-            "How would you rate the quality of the validation / repair results?",
-            min_value=1,
-            max_value=5,
-            value=4,
-        )
-        would_recommend = st.radio(
-            "Would you recommend AgentTeam to a colleague?",
-            options=["Yes", "Maybe", "No"],
-            horizontal=True,
-        )
-        comments = st.text_area(
-            "Any comments, bugs, or suggestions?", placeholder="Optional"
-        )
-        submitted = st.form_submit_button("Submit feedback", use_container_width=True)
-
-    if submitted:
-        submit_survey_response(
-            {
-                "timestamp": datetime.now().isoformat(timespec="seconds"),
-                "name": name,
-                "occupation": occupation,
-                "often_use": often_use,
-                "ease_of_use": ease_of_use,
-                "result_quality": result_quality,
-                "would_recommend": would_recommend,
-                "comments": comments,
-            }
-        )
-        st.success("Thanks! Your feedback has been recorded. 🙌")
+    st.link_button(
+        "📝 Open Survey",
+        NON_DEV_GOOGLE_FORM_URL,
+        use_container_width=True,
+        type="primary",
+    )
 
     st.divider()
     if st.button("🏠 Back to Home", use_container_width=True):
