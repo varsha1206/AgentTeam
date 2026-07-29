@@ -197,8 +197,6 @@ def run_pipeline():
         orchestrator.stream(initial_state, thread_id="test-thread-001")
     )
 
-    log_final_state(result)
-
     # Persist the run to SQLite
     store = SQLiteStore(
         db_path=workspace_path / "agentteam.db",
