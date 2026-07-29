@@ -1,34 +1,38 @@
 import pandas as pd
 import json
+import shutil
 from pathlib import Path
 
 try:
-    source_path = r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv"
-    output_dir = r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze"
-    output_filename = "broken_employee_data.csv"
+    input_path = r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv"
+    output_path = r"C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\bronze\broken_employee_data.csv"
     
-    df = pd.read_csv(source_path)
+    # Read CSV file
+    df = pd.read_csv(input_path)
     
-    rows = len(df)
+    # Count rows and columns
+    num_rows = len(df)
     columns = df.columns.tolist()
-    nulls = {col: int(df[col].isnull().sum()) for col in columns}
     
+    # Count nulls per column
+    null_counts = df.isnull().sum().to_dict()
+    nulls = {col: int(count) for col, count in null_counts.items()}
+    
+    # Copy file to bronze directory
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(input_path, output_path)
+    
+    # Print analysis as JSON
     result = {
         "files": [
             {
-                "filename": output_filename,
-                "rows": rows,
+                "filename": "broken_employee_data.csv",
+                "rows": num_rows,
                 "columns": columns,
                 "nulls": nulls
             }
         ]
     }
-    
-    output_path = Path(output_dir) / output_filename
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    df.to_csv(output_path, index=False)
-    
     print(json.dumps(result))
     
 except Exception as e:

@@ -3,15 +3,23 @@ import json
 from pathlib import Path
 
 try:
-    # Read transformed data
-    temp_file = Path(r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_broken_employee_data.csv')
-    df = pd.read_csv(temp_file)
+    # Read transformed file
+    transformed_file = r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_broken_employee_data.csv'
+    df = pd.read_csv(transformed_file)
     
-    # Define schema rules
+    # Define silver and quarantine output paths
+    silver_file = r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\silver\broken_employee_data.csv'
+    quarantine_file = r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\quarantine\quarantine_broken_employee_data.csv'
+    
+    # Ensure output directories exist
+    Path(silver_file).parent.mkdir(parents=True, exist_ok=True)
+    Path(quarantine_file).parent.mkdir(parents=True, exist_ok=True)
+    
+    # Define validation rules
     schema = {
         "id": {"type": "int", "nullable": False, "min": None, "max": None},
         "salary": {"type": "float", "nullable": False, "min": 0.0, "max": None},
-        "employeeName": {"type": "str", "nullable": False, "min": None, "max": None},
+        "employeeName": {"type": "str", "nullable": True, "min": None, "max": None},
         "employeeAge": {"type": "int", "nullable": False, "min": 0.0, "max": None},
         "department": {"type": "str", "nullable": True, "min": None, "max": None}
     }
@@ -23,83 +31,81 @@ try:
     for idx, row in df.iterrows():
         row_errors = []
         
+        # Validate each column
         for col, rules in schema.items():
             if col not in df.columns:
+                row_errors.append(f"Column {col} missing")
                 continue
             
             value = row[col]
+            is_null = pd.isna(value)
             
             # Check nullable constraint
-            if pd.isna(value):
-                if not rules["nullable"]:
-                    row_errors.append(f"Column '{col}' is non-nullable but has null value")
+            if is_null and not rules["nullable"]:
+                row_errors.append(f"Column {col} is null but not nullable")
                 continue
             
-            # Check type
-            if rules["type"] == "int":
-                try:
-                    int_val = int(value)
-                except (ValueError, TypeError):
-                    row_errors.append(f"Column '{col}' expected int but got {type(value).__name__}")
-                    continue
-                
-                # Check min constraint
-                if rules["min"] is not None and int_val < rules["min"]:
-                    row_errors.append(f"Column '{col}' value {int_val} below minimum {rules['min']}")
+            if is_null:
+                continue
             
-            elif rules["type"] == "float":
+            # Check type constraint
+            type_name = rules["type"]
+            if type_name == "int":
                 try:
-                    float_val = float(value)
+                    int_val = int(float(str(value)))
+                    if rules["min"] is not None and int_val < rules["min"]:
+                        row_errors.append(f"Column {col} value {int_val} below minimum {rules['min']}")
+                    if rules["max"] is not None and int_val > rules["max"]:
+                        row_errors.append(f"Column {col} value {int_val} above maximum {rules['max']}")
                 except (ValueError, TypeError):
-                    row_errors.append(f"Column '{col}' expected float but got {type(value).__name__}")
-                    continue
-                
-                # Check min constraint
-                if rules["min"] is not None and float_val < rules["min"]:
-                    row_errors.append(f"Column '{col}' value {float_val} below minimum {rules['min']}")
+                    row_errors.append(f"Column {col} cannot be coerced to int: {value}")
             
-            elif rules["type"] == "str":
+            elif type_name == "float":
+                try:
+                    float_val = float(str(value))
+                    if rules["min"] is not None and float_val < rules["min"]:
+                        row_errors.append(f"Column {col} value {float_val} below minimum {rules['min']}")
+                    if rules["max"] is not None and float_val > rules["max"]:
+                        row_errors.append(f"Column {col} value {float_val} above maximum {rules['max']}")
+                except (ValueError, TypeError):
+                    row_errors.append(f"Column {col} cannot be coerced to float: {value}")
+            
+            elif type_name == "str":
                 if not isinstance(value, str):
-                    row_errors.append(f"Column '{col}' expected str but got {type(value).__name__}")
+                    row_errors.append(f"Column {col} is not a string: {value}")
         
+        # Add row to valid or quarantined
         if row_errors:
-            quarantine_row = row.copy()
-            quarantine_row['quarantine_reason'] = '; '.join(row_errors)
-            quarantined_rows.append(quarantine_row)
+            row_copy = row.copy()
+            row_copy['quarantine_reason'] = '; '.join(row_errors)
+            quarantined_rows.append(row_copy)
             errors.extend(row_errors)
         else:
             valid_rows.append(row)
     
     # Write valid rows to silver
-    silver_path = Path(r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\silver\broken_employee_data.csv')
-    silver_path.parent.mkdir(parents=True, exist_ok=True)
-    
     if valid_rows:
         valid_df = pd.DataFrame(valid_rows)
-        valid_df.to_csv(silver_path, index=False)
+        valid_df.to_csv(silver_file, index=False)
     else:
         # Write header only
-        valid_df = pd.DataFrame(columns=df.columns)
-        valid_df.to_csv(silver_path, index=False)
+        df[list(schema.keys())].head(0).to_csv(silver_file, index=False)
     
     # Write quarantined rows
-    quarantine_path = Path(r'C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\quarantine\quarantine_broken_employee_data.csv')
-    quarantine_path.parent.mkdir(parents=True, exist_ok=True)
-    
     if quarantined_rows:
-        quarantine_df = pd.DataFrame(quarantined_rows)
-        quarantine_df.to_csv(quarantine_path, index=False)
+        quarantined_df = pd.DataFrame(quarantined_rows)
+        quarantined_df.to_csv(quarantine_file, index=False)
     
     # Determine status
     status = "PASS" if len(valid_rows) > 0 else "FAIL"
     
+    # Print result
     result = {
         "status": status,
         "valid_rows": len(valid_rows),
         "quarantined_rows": len(quarantined_rows),
         "errors": errors
     }
-    
     print(json.dumps(result))
 
 except Exception as e:
