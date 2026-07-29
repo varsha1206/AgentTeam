@@ -1,14 +1,16 @@
 [
   {
-    "status": "PASS",
-    "row_count": 4,
+    "status": "FAIL",
+    "row_count": 0,
     "column_count": 5,
     "validation_violations": [
-      "Column salary value -999.0 is less than minimum 0.0",
-      "Column salary is not nullable but contains null"
+      "Column 'employeeAge' is non-nullable but has null value",
+      "Column 'employeeName' is non-nullable but has null value",
+      "Column 'salary' value -999.0 below minimum 0.0",
+      "Column 'salary' expected float but got str"
     ],
-    "quarantined_rows": 2,
-    "summary": "Validation completed with 4 valid rows promoted to silver and 2 rows quarantined due to salary constraint violations.",
+    "quarantined_rows": 6,
+    "summary": "All 6 rows failed validation due to null values in non-nullable columns, type mismatches, and salary constraint violations.",
     "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\broken_employee_data.csv"
   }
 ]
