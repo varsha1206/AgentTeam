@@ -1,7 +1,5 @@
 id,employeeName,employeeAge,salary,department,unique_employee_id,quarantine_reason
-1,Alice,,50000.0,Eng,21d75baa,Column 'employeeAge' is non-nullable but has null value
-2,Bob,,60000.0,HR,b7641907,Column 'employeeAge' is non-nullable but has null value
-3,,25.0,70000.0,Eng,fdfe8039,Column 'employeeName' is non-nullable but has null value
-4,Diana,28.0,-999.0,Sales,535c2940,Column 'salary' value -999.0 below minimum 0.0
-1,Alice,30.0,five thousand,Eng,a5337352,Column 'salary' expected float but got str
-6,,45.0,67488,IT,982a3f9a,Column 'employeeName' is non-nullable but has null value
+1,Alice,,50000.0,Eng,21d75baa,Column employeeAge is null but not nullable
+2,Bob,,60000.0,HR,b7641907,Column employeeAge is null but not nullable
+4,Diana,28.0,-999.0,Sales,535c2940,Column salary value -999.0 below minimum 0.0
+1,Alice,30.0,five thousand,Eng,a5337352,Column salary cannot be coerced to float: five thousand

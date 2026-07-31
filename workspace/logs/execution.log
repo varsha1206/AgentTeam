@@ -1,93 +1,91 @@
-13:30:32 INFO     agentteam.utils.rule_executor: Registered operation: coerce_age_to_int
-13:30:32 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_age_to_int
-13:30:32 INFO     agentteam.utils.rule_executor: Registered operation: coerce_salary_to_float
-13:30:32 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_salary_to_float
-13:30:32 INFO     agentteam.utils.rule_executor: Registered operation: create_unique_employee_id
-13:30:32 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: create_unique_employee_id
-13:30:32 INFO     agentteam.utils.plugin_registry: Loaded 3 plugins: ['coerce_age_to_int', 'coerce_salary_to_float', 'create_unique_employee_id']
-13:30:33 INFO     agentteam.agents.orchestrator_agent: Loading orchestrator config...
-13:30:33 INFO     agentteam.agents.orchestrator_agent: Orchestrator config loaded successfully
-13:30:34 INFO     agentteam.agents.retrieval_agent: Loading retrieval agent config...
-13:30:34 INFO     agentteam.agents.retrieval_agent: Retrieval agent config loaded successfully
-13:30:34 INFO     agentteam.agents.validation_agent: Loading validation agent config...
-13:30:34 INFO     agentteam.agents.validation_agent: Validation agent config loaded successfully
-13:30:34 INFO     agentteam.agents.repair_agent: Loading repair agent config...
-13:30:35 INFO     agentteam.agents.repair_agent: Repair agent config loaded successfully
-13:30:35 INFO     agentteam.nodes.retrieval_node: Running retrieval agent...
-13:30:35 INFO     agentteam.nodes.retrieval_node: Detected CSV file: broken_employee_data.csv
-13:30:35 INFO     agentteam.nodes.retrieval_node: Data source inferred for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv
-13:30:35 INFO     agentteam.nodes.retrieval_node: Data sources for retrieval: ['C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\input\\broken_employee_data.csv']
-13:30:44 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_script.py — Reads CSV file, analyzes structure and nulls, and saves raw data to bronze output directory
-13:30:54 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script executed successfully: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_script.py
-13:30:56 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Standardized broken_employee_data.csv -> broken_employee_data.csv
-13:31:02 INFO     agentteam.utils.routing_utils: Routing decision: validation_agent — The agent successfully completed data retrieval and standardization with no errors, so the next logical step in the pipeline is to route to the validation_agent to verify data quality and schema compliance.
-13:31:02 INFO     agentteam.nodes.validation_node: Cleared stale reports
-13:31:03 INFO     agentteam.tools.validation_agent.validator_tools: Read sample: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\broken_employee_data.csv — 6 rows, 5 cols
-13:31:04 INFO     agentteam.tools.validation_agent.validator_tools: Loaded validation rules for broken_employee_data.csv: 4 schema rules, 2 transformations
-13:31:09 INFO     agentteam.tools.validation_agent.validator_tools: Inferred columns for transformations: {'create_unique_employee_id': ['id', 'employeeName'], 'coerce_employee_age_to_int': ['employeeAge']}
-13:31:09 INFO     agentteam.tools.validation_agent.validator_tools: operation='create_unique_employee_id' columns=['id', 'employeeName'] selection='explicit' description='Create a hash id' fill_value=None
-13:31:09 INFO     agentteam.tools.validation_agent.validator_tools: operation='coerce_employee_age_to_int' columns=['employeeAge'] selection='explicit' description='Coerce age to int' fill_value=None
-13:31:09 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 1, 'plugin': 0, 'needs_generation': 1, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': ['coerce_employee_age_to_int']}
-13:31:09 INFO     agentteam.tools.validation_agent.validator_tools: Execution plan: {'total_steps': 2, 'built_in': 1, 'plugin': 0, 'needs_generation': 1, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': ['coerce_employee_age_to_int']}
-13:31:11 INFO     agentteam.utils.plugin_registry: Plugin saved: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\plugins\coerce_employee_age_to_int.py
-13:31:12 INFO     agentteam.utils.rule_executor: Registered operation: coerce_employee_age_to_int
-13:31:12 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_employee_age_to_int
-13:31:12 INFO     agentteam.tools.validation_agent.validator_tools: Plugin generated and registered: coerce_employee_age_to_int at C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\plugins\coerce_employee_age_to_int.py
-13:31:15 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
-13:31:15 INFO     agentteam.utils.execution_planner: Executing: create_unique_employee_id (built_in) on columns: []
-13:31:15 INFO     agentteam.utils.execution_planner: Executing: coerce_employee_age_to_int (built_in) on columns: ['employeeAge']
-13:31:15 INFO     agentteam.tools.validation_agent.validator_tools: Transformation complete: 6 rows → C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_broken_employee_data.csv
-13:31:17 INFO     agentteam.tools.validation_agent.validator_tools: Transformation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\transformation_report.json — Applied 2 transformations to convert employeeAge to int type and create unique employee hash IDs for 6 rows.
-13:31:26 INFO     agentteam.tools.validation_agent.validator_tools: Validation script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.py — Validates transformed employee data against schema rules and quarantines invalid rows.
-13:31:30 INFO     agentteam.tools.validation_agent.validator_tools: Script executed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.py
-13:31:32 INFO     agentteam.tools.validation_agent.validator_tools: Validation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\validation_report.json — FAIL for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\broken_employee_data.csv
-13:31:41 INFO     agentteam.nodes.validation_node: Validation complete — outcome: FAIL
-13:31:42 INFO     agentteam.utils.routing_utils: Routing decision: end — Validation completed with data quality violations (null values, type conversion errors, constraint violations) that are not repair-eligible since they are validation rule violations, not script crashes or schema mismatches.
-13:31:42 INFO     agentteam.storage.sqlite_store: Metadata schema initialised: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\agentteam.db
-13:31:42 INFO     agentteam.storage.sqlite_store: Loading SQLiteStore config...
-13:31:43 INFO     agentteam.storage.sqlite_store: SQLiteStore config loaded successfully
-13:31:43 INFO     agentteam.storage.sqlite_store: Run persisted: e84790be-1d7d-483b-a0ef-65ba922b82b2 — complete
-13:31:46 INFO     agentteam.storage.sqlite_store: Schema inferred for broken_employee_data.csv: 6 columns
-13:31:46 INFO     agentteam.storage.sqlite_store: Silver persisted: broken_employee_data.csv → silver_broken_employee_data — 0 rows
-13:31:48 INFO     agentteam.storage.sqlite_store: Schema inferred for quarantine_broken_employee_data.csv: 6 columns
-13:43:11 INFO     agentteam.agents.orchestrator_agent: Loading orchestrator config...
-13:43:12 INFO     agentteam.agents.orchestrator_agent: Orchestrator config loaded successfully
-13:43:12 INFO     agentteam.agents.retrieval_agent: Loading retrieval agent config...
-13:43:12 INFO     agentteam.agents.retrieval_agent: Retrieval agent config loaded successfully
-13:43:12 INFO     agentteam.agents.validation_agent: Loading validation agent config...
-13:43:12 INFO     agentteam.agents.validation_agent: Validation agent config loaded successfully
-13:43:13 INFO     agentteam.agents.repair_agent: Loading repair agent config...
-13:43:13 INFO     agentteam.agents.repair_agent: Repair agent config loaded successfully
-13:43:13 INFO     agentteam.nodes.retrieval_node: Running retrieval agent...
-13:43:13 INFO     agentteam.nodes.retrieval_node: Detected CSV file: broken_employee_data.csv
-13:43:13 INFO     agentteam.nodes.retrieval_node: Data source inferred for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv
-13:43:13 INFO     agentteam.nodes.retrieval_node: Data sources for retrieval: ['C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\input\\broken_employee_data.csv']
-13:43:19 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_script.py — Read broken_employee_data.csv, analyze structure and nulls, write to bronze directory
-13:43:27 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script executed successfully: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_script.py
-13:43:29 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Standardized broken_employee_data.csv -> broken_employee_data.csv
-13:43:37 INFO     agentteam.utils.routing_utils: Routing decision: validation_agent — Data retrieval completed successfully with standardized CSV created, so the next logical step in the pipeline is to route to validation_agent for schema and data validation.
-13:43:39 INFO     agentteam.nodes.validation_node: Cleared stale reports
-13:43:44 INFO     agentteam.tools.validation_agent.validator_tools: Loaded validation rules for broken_employee_data.csv: 4 schema rules, 2 transformations
-13:43:45 INFO     agentteam.tools.validation_agent.validator_tools: Read sample: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\broken_employee_data.csv — 6 rows, 5 cols
-13:43:53 INFO     agentteam.tools.validation_agent.validator_tools: Inferred columns for transformations: {'create_unique_employee_id': ['id', 'employeeName'], 'coerce_employee_age_to_int': ['employeeAge']}
-13:43:53 INFO     agentteam.tools.validation_agent.validator_tools: operation='create_unique_employee_id' columns=['id', 'employeeName'] selection='explicit' description='Create a hash id' fill_value=None
-13:43:53 INFO     agentteam.tools.validation_agent.validator_tools: operation='coerce_employee_age_to_int' columns=['employeeAge'] selection='explicit' description='Coerce age to int' fill_value=None
-13:43:53 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
-13:43:53 INFO     agentteam.tools.validation_agent.validator_tools: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
-13:43:59 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
-13:43:59 INFO     agentteam.utils.execution_planner: Executing: create_unique_employee_id (built_in) on columns: []
-13:43:59 INFO     agentteam.utils.execution_planner: Executing: coerce_employee_age_to_int (built_in) on columns: []
-13:43:59 INFO     agentteam.tools.validation_agent.validator_tools: Transformation complete: 6 rows → C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_broken_employee_data.csv
-13:44:03 INFO     agentteam.tools.validation_agent.validator_tools: Transformation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\transformation_report.json — Transformation applied create_unique_employee_id and coerce_employee_age_to_int operations to 6 rows with inferred rule for department column.
-13:44:11 INFO     agentteam.tools.validation_agent.validator_tools: Validation script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.py — Validates transformed employee data against schema rules and separates valid rows to silver output and invalid rows to quarantine.
-13:44:22 INFO     agentteam.tools.validation_agent.validator_tools: Script executed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.py
-13:44:25 INFO     agentteam.tools.validation_agent.validator_tools: Validation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\validation_report.json — FAIL for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\broken_employee_data.csv
-13:44:32 INFO     agentteam.nodes.validation_node: Validation complete — outcome: FAIL
-13:44:34 INFO     agentteam.utils.routing_utils: Routing decision: end — Validation completed with rule violations (null values and invalid data formats), which are data quality issues rather than structural failures, so routing to end per the rule that repair_agent should not be used for validation violations.
-13:44:34 INFO     agentteam.storage.sqlite_store: Metadata schema initialised: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\agentteam.db
-13:44:34 INFO     agentteam.storage.sqlite_store: Loading SQLiteStore config...
-13:44:34 INFO     agentteam.storage.sqlite_store: SQLiteStore config loaded successfully
-13:44:34 INFO     agentteam.storage.sqlite_store: Run persisted: 02ff4995-b69a-4206-8d02-24700bbbc2b0 — complete
-13:44:38 INFO     agentteam.storage.sqlite_store: Schema inferred for broken_employee_data.csv: 6 columns
-13:44:38 INFO     agentteam.storage.sqlite_store: Silver persisted: broken_employee_data.csv → silver_broken_employee_data — 0 rows
-13:44:41 INFO     agentteam.storage.sqlite_store: Schema inferred for quarantine_broken_employee_data.csv: 6 columns
+14:02:41 INFO     agentteam.utils.rule_executor: Registered operation: coerce_age_to_int
+14:02:41 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_age_to_int
+14:02:42 INFO     agentteam.utils.rule_executor: Registered operation: coerce_employee_age_to_int
+14:02:42 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_employee_age_to_int
+14:02:42 INFO     agentteam.utils.rule_executor: Registered operation: coerce_salary_to_float
+14:02:42 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_salary_to_float
+14:02:42 INFO     agentteam.utils.rule_executor: Registered operation: create_unique_employee_id
+14:02:42 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: create_unique_employee_id
+14:02:42 INFO     agentteam.utils.plugin_registry: Loaded 4 plugins: ['coerce_age_to_int', 'coerce_employee_age_to_int', 'coerce_salary_to_float', 'create_unique_employee_id']
+14:02:42 INFO     agentteam.agents.orchestrator_agent: Loading orchestrator config...
+14:02:42 INFO     agentteam.agents.orchestrator_agent: Orchestrator config loaded successfully
+14:02:42 INFO     agentteam.agents.retrieval_agent: Loading retrieval agent config...
+14:02:42 INFO     agentteam.agents.retrieval_agent: Retrieval agent config loaded successfully
+14:02:42 INFO     agentteam.agents.validation_agent: Loading validation agent config...
+14:02:43 INFO     agentteam.agents.validation_agent: Validation agent config loaded successfully
+14:02:43 INFO     agentteam.agents.repair_agent: Loading repair agent config...
+14:02:43 INFO     agentteam.agents.repair_agent: Repair agent config loaded successfully
+14:02:43 INFO     agentteam.nodes.retrieval_node: Running retrieval agent...
+14:02:43 INFO     agentteam.nodes.retrieval_node: Detected CSV file: broken_employee_data.csv
+14:02:43 INFO     agentteam.nodes.retrieval_node: Data source inferred for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv
+14:02:43 INFO     agentteam.nodes.retrieval_node: Data sources for retrieval: ['C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\input\\broken_employee_data.csv']
+14:02:48 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_script.py — Reads CSV file, analyzes structure and nulls, writes raw data to bronze directory
+14:02:54 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script executed successfully: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_script.py
+14:02:55 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Standardized broken_employee_data.csv -> broken_employee_data.csv
+14:03:04 INFO     agentteam.utils.routing_utils: Routing decision: validation_agent — Data retrieval completed successfully with no errors, so the next logical step in the pipeline is to validate the retrieved and staged data.
+14:03:04 INFO     agentteam.nodes.validation_node: Cleared stale reports
+14:03:06 INFO     agentteam.tools.validation_agent.validator_tools: Loaded validation rules for broken_employee_data.csv: 4 schema rules, 2 transformations
+14:03:06 INFO     agentteam.tools.validation_agent.validator_tools: Read sample: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\broken_employee_data.csv — 6 rows, 5 cols
+14:03:11 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
+14:03:11 INFO     agentteam.tools.validation_agent.validator_tools: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
+14:03:15 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
+14:03:15 INFO     agentteam.utils.execution_planner: Executing: create_unique_employee_id (built_in) on columns: ['id', 'employeeName']
+14:03:15 INFO     agentteam.utils.execution_planner: Executing: coerce_employee_age_to_int (built_in) on columns: ['employeeAge']
+14:03:15 INFO     agentteam.tools.validation_agent.validator_tools: Transformation complete: 6 rows → C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_broken_employee_data.csv
+14:03:18 INFO     agentteam.tools.validation_agent.validator_tools: Transformation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\transformation_report.json — Applied create_unique_employee_id and coerce_employee_age_to_int transformations to 6 input rows with inferred schema including department column.
+14:03:27 INFO     agentteam.tools.validation_agent.validator_tools: Validation script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.csv.py — Validates transformed broken_employee_data rows against schema rules, separates valid and quarantined rows with reasons.
+14:03:31 INFO     agentteam.tools.validation_agent.validator_tools: Script executed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.csv.py
+14:03:34 INFO     agentteam.tools.validation_agent.validator_tools: Validation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\validation_report.json — FAIL for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\broken_employee_data.csv
+14:03:41 INFO     agentteam.nodes.validation_node: Validation complete — outcome: FAIL
+14:03:44 INFO     agentteam.utils.routing_utils: Routing decision: end — Validation completed with 0 files passed, indicating validation failed, but no script crash or schema mismatch errors were detected, so routing to end per the failure rule.
+14:03:44 INFO     agentteam.storage.sqlite_store: Metadata schema initialised: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\agentteam.db
+14:03:44 INFO     agentteam.storage.sqlite_store: Loading SQLiteStore config...
+14:03:44 INFO     agentteam.storage.sqlite_store: SQLiteStore config loaded successfully
+14:03:44 INFO     agentteam.storage.sqlite_store: Run persisted: e05cfbbb-7dc9-4cc4-a629-2fa857cfa758 — complete
+14:03:46 INFO     agentteam.storage.sqlite_store: Schema inferred for broken_employee_data.csv: 6 columns
+14:03:46 INFO     agentteam.storage.sqlite_store: Silver persisted: broken_employee_data.csv → silver_broken_employee_data — 0 rows
+14:03:48 INFO     agentteam.storage.sqlite_store: Schema inferred for quarantine_broken_employee_data.csv: 6 columns
+14:07:27 INFO     agentteam.agents.orchestrator_agent: Loading orchestrator config...
+14:07:28 INFO     agentteam.agents.orchestrator_agent: Orchestrator config loaded successfully
+14:07:28 INFO     agentteam.agents.retrieval_agent: Loading retrieval agent config...
+14:07:28 INFO     agentteam.agents.retrieval_agent: Retrieval agent config loaded successfully
+14:07:28 INFO     agentteam.agents.validation_agent: Loading validation agent config...
+14:07:28 INFO     agentteam.agents.validation_agent: Validation agent config loaded successfully
+14:07:29 INFO     agentteam.agents.repair_agent: Loading repair agent config...
+14:07:29 INFO     agentteam.agents.repair_agent: Repair agent config loaded successfully
+14:07:29 INFO     agentteam.nodes.retrieval_node: Running retrieval agent...
+14:07:29 INFO     agentteam.nodes.retrieval_node: Detected CSV file: broken_employee_data.csv
+14:07:29 INFO     agentteam.nodes.retrieval_node: Data source inferred for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\broken_employee_data.csv
+14:07:29 INFO     agentteam.nodes.retrieval_node: Data sources for retrieval: ['C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\input\\broken_employee_data.csv']
+14:07:39 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_script.py — Reads CSV file, analyzes its structure (rows, columns, nulls), and copies it to bronze directory.
+14:07:49 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script executed successfully: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_script.py
+14:07:50 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Standardized broken_employee_data.csv -> broken_employee_data.csv
+14:07:55 INFO     agentteam.utils.routing_utils: Routing decision: validation_agent — Data retrieval completed successfully with no errors, so the next logical step in the pipeline is to route to the validation_agent for schema and data quality validation.
+14:07:55 INFO     agentteam.nodes.validation_node: Cleared stale reports
+14:07:57 INFO     agentteam.tools.validation_agent.validator_tools: Loaded validation rules for broken_employee_data.csv: 4 schema rules, 2 transformations
+14:07:57 INFO     agentteam.tools.validation_agent.validator_tools: Read sample: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\broken_employee_data.csv — 6 rows, 5 cols
+14:08:09 INFO     agentteam.tools.validation_agent.validator_tools: Inferred columns for transformations: {'create_unique_employee_id': ['id'], 'coerce_employee_age_to_int': ['employeeAge']}
+14:08:09 INFO     agentteam.tools.validation_agent.validator_tools: operation='create_unique_employee_id' columns=['id'] selection='explicit' description='Create a hash id' fill_value=None
+14:08:09 INFO     agentteam.tools.validation_agent.validator_tools: operation='coerce_employee_age_to_int' columns=['employeeAge'] selection='explicit' description='Coerce age to int' fill_value=None
+14:08:09 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
+14:08:09 INFO     agentteam.tools.validation_agent.validator_tools: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
+14:08:13 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int'], 'pending_operations': []}
+14:08:13 INFO     agentteam.utils.execution_planner: Executing: create_unique_employee_id (built_in) on columns: []
+14:08:13 INFO     agentteam.utils.execution_planner: Executing: coerce_employee_age_to_int (built_in) on columns: []
+14:08:13 INFO     agentteam.tools.validation_agent.validator_tools: Transformation complete: 6 rows → C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_broken_employee_data.csv
+14:08:16 INFO     agentteam.tools.validation_agent.validator_tools: Transformation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\transformation_report.json — Transformed broken_employee_data.csv with create_unique_employee_id and coerce_employee_age_to_int operations on all 6 rows.
+14:08:24 INFO     agentteam.tools.validation_agent.validator_tools: Validation script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.py — Validates transformed broken_employee_data.csv against schema rules, writes valid rows to silver and quarantined rows to quarantine.
+14:08:28 INFO     agentteam.tools.validation_agent.validator_tools: Script executed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_broken_employee_data.py
+14:08:30 INFO     agentteam.tools.validation_agent.validator_tools: Validation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\validation_report.json — PASS for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\broken_employee_data.csv
+14:08:38 INFO     agentteam.nodes.validation_node: Silver file found: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\output\silver\broken_employee_data.csv
+14:08:38 INFO     agentteam.nodes.validation_node: Validation complete — outcome: PASS
+14:08:39 INFO     agentteam.utils.routing_utils: Routing decision: end — Validation completed with data quality errors (null values, out-of-range values, type coercion failures) that are validation rule violations, not script crashes or schema mismatches, so routing to end per the rules.
+14:08:39 INFO     agentteam.storage.sqlite_store: Metadata schema initialised: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\agentteam.db
+14:08:39 INFO     agentteam.storage.sqlite_store: Loading SQLiteStore config...
+14:08:39 INFO     agentteam.storage.sqlite_store: SQLiteStore config loaded successfully
+14:08:39 INFO     agentteam.storage.sqlite_store: Run persisted: abdb20e8-fbf1-4bdd-808c-a09a49c0c05f — complete
+14:08:41 INFO     agentteam.storage.sqlite_store: Schema inferred for broken_employee_data.csv: 6 columns
+14:08:41 INFO     agentteam.storage.sqlite_store: Silver persisted: broken_employee_data.csv → silver_broken_employee_data — 2 rows
+14:08:43 INFO     agentteam.storage.sqlite_store: Schema inferred for quarantine_broken_employee_data.csv: 6 columns
+14:08:43 INFO     agentteam.storage.sqlite_store: Quarantine persisted: quarantine_broken_employee_data.csv → quarantine_quarantine_broken_employee_data — 4 rows
+14:08:43 INFO     agentteam.main: Run summary: {'run_id': 'abdb20e8-fbf1-4bdd-808c-a09a49c0c05f', 'status': 'complete', 'files_processed': 1, 'repair_attempts': 0}

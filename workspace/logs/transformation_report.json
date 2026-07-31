@@ -20,6 +20,6 @@
       }
     ],
     "inferred_rules": true,
-    "summary": "Transformation applied create_unique_employee_id and coerce_employee_age_to_int operations to 6 rows with inferred rule for department column."
+    "summary": "Transformed broken_employee_data.csv with create_unique_employee_id and coerce_employee_age_to_int operations on all 6 rows."
   }
 ]

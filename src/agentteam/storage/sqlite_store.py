@@ -144,8 +144,9 @@ class SQLiteStore:
 
         for col in schema.columns:
             definition = f"{col.column_name} {col.sql_type}"
-            if not col.nullable:
-                definition += " NOT NULL"
+            if layer == "silver":
+                if not col.nullable:
+                    definition += " NOT NULL"
             col_defs.append(definition)
 
         col_defs.extend(
