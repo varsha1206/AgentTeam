@@ -60,6 +60,7 @@ class RepairNode(BaseAgentNode):
                     )
                 ],
                 summary="Repair produced no result.",
+                script_path=None,
             )
         )
         logger.info(f"Repair status: {result.status} — attempt {repair_attempts}")
@@ -67,8 +68,8 @@ class RepairNode(BaseAgentNode):
             "repaired_data": result.model_dump(),
             "repair_attempts": repair_attempts,
             "repair_target": None,
-            "repair_error": None,
-            "repair_script_path": None,
+            "repair_error": result.errors,
+            "repair_script_path": result.script_path,
             "errors": result.errors,
         }
 
