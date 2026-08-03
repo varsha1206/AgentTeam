@@ -24,13 +24,19 @@ PHASE = 3
 
 
 class Orchestrator:
-    def __init__(self, workspace: Path, llm_model: BaseChatModel | None = None):
+    def __init__(
+        self,
+        workspace: Path,
+        llm_model: BaseChatModel | None = None,
+        repair_enabled: bool = True,
+    ):
         if not workspace.exists():
             raise FileNotFoundError(f"Workspace not found at {workspace}")
 
         self.workspace = workspace
         self.cfg: DictConfig = self._load_config()
         self.llm_model: BaseChatModel = llm_model or self._build_llm()
+        self.repair_enabled = repair_enabled
         self.app = self._build_app()
 
     def _load_config(self) -> DictConfig:
@@ -79,18 +85,20 @@ class Orchestrator:
             "validation_agent",
             validation_router.route,
             {
-                "repair_agent": "repair_agent",
+                "repair_agent": "repair_agent" if self.repair_enabled else END,
                 "end": END,
             },
         )
-        graph.add_conditional_edges(
-            "repair_agent",
-            repair_router.route,
-            {
-                "validation_agent": "validation_agent",
-                "end": END,
-            },
-        )
+        if self.repair_enabled:
+            graph.add_conditional_edges(
+                "repair_agent",
+                repair_router.route,
+                {
+                    "retrieval_agent": "retrieval_agent",
+                    "validation_agent": "validation_agent",
+                    "end": END,
+                },
+            )
         return graph.compile(checkpointer=MemorySaver(), name="AgentTeam_Main")
 
     def invoke(self, state: GraphState, thread_id: str = "default") -> dict:
