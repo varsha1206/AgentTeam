@@ -1,25 +1,142 @@
 [
   {
-    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\broken_employee_data.csv",
-    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_broken_employee_data.csv",
-    "total_rows_input": 6,
-    "total_rows_output": 6,
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\eval_clean.csv",
+    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_eval_clean.csv",
+    "total_rows_input": 20,
+    "total_rows_output": 20,
     "quarantined_rows": 0,
     "transformations_applied": [
       {
         "operation": "create_unique_employee_id",
         "columns": [],
-        "rows_affected": 6,
-        "reason": "Create a hash id"
+        "rows_affected": 20,
+        "reason": "Generate a unique employee identifier."
       },
       {
         "operation": "coerce_employee_age_to_int",
         "columns": [],
-        "rows_affected": 6,
-        "reason": "Coerce age to int"
+        "rows_affected": 20,
+        "reason": "Convert employee age to integer."
+      },
+      {
+        "operation": "normalize_department_name",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Normalize department names to a consistent format."
+      },
+      {
+        "operation": "trim_string_columns",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Remove leading and trailing whitespace from string columns."
       }
     ],
-    "inferred_rules": true,
-    "summary": "Transformed broken_employee_data.csv with create_unique_employee_id and coerce_employee_age_to_int operations on all 6 rows."
+    "inferred_rules": false,
+    "summary": "All 20 rows transformed successfully with 4 operations applied: employee ID generation, age coercion, department normalization, and string trimming."
+  },
+  {
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\eval_dataset_1.csv",
+    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_eval_dataset_1.csv",
+    "total_rows_input": 20,
+    "total_rows_output": 20,
+    "quarantined_rows": 0,
+    "transformations_applied": [
+      {
+        "operation": "create_unique_employee_id",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Generate a unique employee identifier"
+      },
+      {
+        "operation": "coerce_employee_age_to_int",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Convert employee age to integer"
+      },
+      {
+        "operation": "normalize_department_name",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Normalize department names to a consistent format"
+      },
+      {
+        "operation": "trim_string_columns",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Remove leading and trailing whitespace from string columns"
+      }
+    ],
+    "inferred_rules": false,
+    "summary": "Applied 4 built-in transformations to eval_dataset_1.csv, processing 20 rows with no records lost."
+  },
+  {
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\eval_dataset_2.csv",
+    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_eval_dataset_2.csv",
+    "total_rows_input": 20,
+    "total_rows_output": 20,
+    "quarantined_rows": 0,
+    "transformations_applied": [
+      {
+        "operation": "create_unique_employee_id",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Generate a unique employee identifier."
+      },
+      {
+        "operation": "coerce_employee_age_to_int",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Convert employee age to integer."
+      },
+      {
+        "operation": "normalize_department_name",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Normalize department names to a consistent format."
+      },
+      {
+        "operation": "trim_string_columns",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Remove leading and trailing whitespace from string columns."
+      }
+    ],
+    "inferred_rules": false,
+    "summary": "Applied 4 transformations to 20 rows: unique employee ID generation, age coercion to int, department name normalization, and string trimming."
+  },
+  {
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\eval_dataset_3.csv",
+    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_eval_dataset_3.csv",
+    "total_rows_input": 20,
+    "total_rows_output": 20,
+    "quarantined_rows": 0,
+    "transformations_applied": [
+      {
+        "operation": "create_unique_employee_id",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Generate a unique employee identifier"
+      },
+      {
+        "operation": "coerce_employee_age_to_int",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Convert employee age to integer"
+      },
+      {
+        "operation": "normalize_department_name",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Normalize department names to a consistent format"
+      },
+      {
+        "operation": "trim_string_columns",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Remove leading and trailing whitespace from string columns"
+      }
+    ],
+    "inferred_rules": false,
+    "summary": "Applied four transformations to clean and standardize employee data including unique ID generation, age coercion, department normalization, and string trimming."
   }
 ]

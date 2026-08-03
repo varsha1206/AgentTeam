@@ -1,0 +1,42 @@
+schema:
+  id:
+    type: int
+    nullable: false
+
+  name:
+    type: str
+    nullable: false
+    min_length: 1
+
+  age:
+    type: int
+    nullable: false
+    min: 18
+    max: 70
+
+  salary:
+    type: float
+    nullable: false
+    min: 0
+
+  department:
+    type: str
+    nullable: false
+    min_length: 1
+
+transformations:
+  - operation: create_unique_employee_id
+    selection: infer
+    description: Generate a unique employee identifier.
+
+  - operation: coerce_employee_age_to_int
+    selection: infer
+    description: Convert employee age to integer.
+
+  - operation: normalize_department_name
+    selection: infer
+    description: Normalize department names to a consistent format.
+
+  - operation: trim_string_columns
+    selection: infer
+    description: Remove leading and trailing whitespace from string columns.

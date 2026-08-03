@@ -1,0 +1,4 @@
+id,name,age,salary,department,employee_id,quarantine_reason
+5,,29,54000.0,SALES,EMP00005,Column 'name' is not nullable but has null value
+10,Jack,34,,SALES,EMP00010,Column 'salary' is not nullable but has null value
+15,Olivia,39,64000.0,,EMP00015,Column 'department' is not nullable but has null value

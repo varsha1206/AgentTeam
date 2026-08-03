@@ -1,0 +1,9 @@
+run_id,dataset,condition,detection_accuracy,repair_success,repair_attempts,pipeline_success,execution_time_seconds,llm_calls_made,silver_row_count,quarantine_row_count,notes
+ded60852-7b56-4e66-8d55-72e548fc026e,clean,with_repair,1.0,False,0,True,56.62,21,20,0,
+788f0c71-eacf-467d-9b97-c0a025df3f39,clean,without_repair,1.0,False,0,False,15.75,7,0,0,
+a14bda70-c809-43ff-8824-f63a52490b30,dataset_1_type_mismatches,with_repair,1.0,False,0,True,81.66,31,37,3,
+d2ca66ee-7ce4-4c3f-b6a8-158db55cd27d,dataset_1_type_mismatches,without_repair,1.0,False,0,True,84.61,31,37,3,
+c2318c70-7019-41c7-a671-a7e475ce9b3f,dataset_2_missing_values,with_repair,1.0,False,0,True,125.45,42,37,6,
+d297a8ab-ff30-47c7-a710-11796076dd0a,dataset_2_missing_values,without_repair,1.0,False,0,True,124.58,43,54,6,
+66542100-9c2a-483d-a248-0ff3765c83a5,dataset_3_mixed_errors,with_repair,1.0,False,0,True,159.93,55,71,9,
+de6788e6-b745-43b9-9a8f-a86ef40e5dcd,dataset_3_mixed_errors,without_repair,1.0,False,0,True,163.71,55,54,9,
