@@ -27,10 +27,10 @@ class GroundTruth(BaseModel):
     dataset_name: str
     filename: str
 
+    dataset_category: Literal["controlled", "scalability"] = "controlled"
+
     total_rows: int
-
     injected_errors: list[InjectedError]
-
     expected_quarantine_rows: int = Field(
         description="Rows expected to end up in quarantine."
     )
@@ -42,10 +42,12 @@ class ExperimentConfig(BaseModel):
     experiment_name: str
 
     repair_enabled: bool = True
-
     plugin_cache_enabled: bool = True
-
     llm_rule_inference_enabled: bool = True
+
+    failure_type: Literal[
+        "none", "syntax_error", "import_error", "runtime_type_error"
+    ] = "none"
 
 
 class ExperimentResult(BaseModel):

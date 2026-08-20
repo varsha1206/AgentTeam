@@ -55,6 +55,7 @@ class ValidatorTools:
         self.generated_dir = generated_dir
         self.logs_dir = logs_dir
         self.temp_dir = temp_dir
+        self.workspace_path = silver_dir.parent.parent
         self.staged_input_dir = staged_input_dir
         self.rules_dir_path = rules_dir_path
         self.plugin_registry = PluginRegistry(plugins_dir)
@@ -266,7 +267,7 @@ class ValidatorTools:
 
         return str(script_path)
 
-    def execute_script(self, script_path: str, stage: str = "unknown") -> str:
+    def execute_script(self, script_path: str) -> str:
         """Execute a script and return its output."""
         path = Path(script_path)
 
@@ -274,7 +275,7 @@ class ValidatorTools:
             return json.dumps(
                 {
                     "SCRIPT_FAILED": True,
-                    "stage": stage,
+                    "stage": "validation",
                     "error": f"Script not found at {script_path}",
                     "script_path": script_path,
                 }
@@ -294,7 +295,7 @@ class ValidatorTools:
                 return json.dumps(
                     {
                         "SCRIPT_FAILED": True,
-                        "stage": stage,
+                        "stage": "validation",
                         "error": result.stderr,
                         "script_path": str(path),
                     }
@@ -310,7 +311,7 @@ class ValidatorTools:
                 return json.dumps(
                     {
                         "SCRIPT_FAILED": True,
-                        "stage": stage,
+                        "stage": "validation",
                         "error": f"Script ran but did not print valid JSON. Raw output: {output[:300]}",
                         "script_path": str(path),
                     }
@@ -320,7 +321,7 @@ class ValidatorTools:
             return json.dumps(
                 {
                     "SCRIPT_FAILED": True,
-                    "stage": stage,
+                    "stage": "validation",
                     "error": "Script timed out after 30 seconds",
                     "script_path": str(path),
                 }
@@ -329,7 +330,7 @@ class ValidatorTools:
             return json.dumps(
                 {
                     "SCRIPT_FAILED": True,
-                    "stage": stage,
+                    "stage": "validation",
                     "error": str(e),
                     "script_path": str(path),
                 }
@@ -464,7 +465,7 @@ class ValidatorTools:
             )
 
         @tool
-        def execute_script(script_path: str, stage: str) -> str:
+        def execute_script(script_path: str) -> str:
             """
             Execute a validation script and return its output.
             Returns SCRIPT_SUCCESS or SCRIPT_FAILED.
@@ -472,7 +473,7 @@ class ValidatorTools:
                 script_path: absolute path returned by write_script
                 stage: 'validation', 'transformation', or 'retrieval' — which stage this script belongs to
             """
-            return _self.execute_script(script_path, stage)
+            return _self.execute_script(script_path)
 
         @tool
         def write_transformation_report(

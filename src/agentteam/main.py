@@ -167,7 +167,7 @@ def run_pipeline():
                 "content": (
                     "Retrieve the dataset from the input folder. "
                     "Read all available files, summarise their contents, "
-                    "and write the raw data to the output folder."
+                    "complete the ingestion pipeline with the agents retrieval, validation, and repair (if needed). "
                 ),
             }
         ],
@@ -183,6 +183,7 @@ def run_pipeline():
         "quarantine_layer": [],
         "repair_target": None,
         "repair_error": None,
+        "needs_repair": None,
         "repair_attempts": 0,
         "errors": [],
         "artifacts": {},
@@ -194,7 +195,10 @@ def run_pipeline():
     }
 
     result = stream_pipeline(
-        orchestrator.stream(initial_state, thread_id="test-thread-001")
+        orchestrator.stream(
+            initial_state,
+            thread_id="test-thread-001",
+        )
     )
 
     # Persist the run to SQLite
@@ -213,6 +217,7 @@ def run_pipeline():
         result.get("metadata", {}).get("run_id", "unknown")
     )
     logger.info(f"Run summary: {summary}")
+    log_final_state(result)
     return result, summary, "Pipeline completed!"
 
 

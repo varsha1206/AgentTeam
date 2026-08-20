@@ -54,9 +54,7 @@ class Orchestrator:
             model_name="claude-haiku-4-5-20251001",
             timeout=10,
             stop=["end of response"],
-            model_kwargs={
-                "extra_headers": {"anthropic-beta": "prompt-caching-2024-07-31"}
-            },
+            cache=True,
         )
 
     def _build_app(self):
@@ -77,7 +75,7 @@ class Orchestrator:
             retrieval_router.route,
             {
                 "validation_agent": "validation_agent",
-                "repair_agent": "repair_agent",
+                "repair_agent": "repair_agent" if self.repair_enabled else END,
                 "end": END,
             },
         )

@@ -272,6 +272,82 @@ def generate_dataset_3(rows: int = 20) -> GroundTruth:
     )
 
 
+import random
+
+
+def generate_base_dataset_at_scale(rows: int) -> pd.DataFrame:
+    """
+    Deterministic large dataset generator. Does not depend on the fixed
+    20-name list used by the small controlled datasets.
+    """
+    departments = ["HR", "IT", "Finance", "Engineering", "Sales"]
+    return pd.DataFrame(
+        {
+            "id": list(range(1, rows + 1)),
+            "name": [f"Employee_{i}" for i in range(1, rows + 1)],
+            "age": [20 + (i % 45) for i in range(rows)],
+            "salary": [40000 + (i * 137) % 60000 for i in range(rows)],
+            "department": [departments[i % len(departments)] for i in range(rows)],
+        }
+    )
+
+
+def inject_proportional_errors(
+    df: pd.DataFrame, error_rate: float = 0.05, seed: int = 42
+) -> list[InjectedError]:
+    """
+    Injects errors into a fixed proportion of rows, cycling through
+    type_mismatch, missing_value, and range_violation. Deterministic
+    via a fixed seed — same output on every generation run.
+    """
+    rng = random.Random(seed)
+    n_errors = int(len(df) * error_rate)
+    rows = rng.sample(range(len(df)), n_errors)
+
+    df["age"] = df["age"].astype(object)
+    df["salary"] = df["salary"].astype(object)
+
+    error_cycle = ["type_mismatch", "missing_value", "range_violation"]
+    errors = []
+
+    for idx, row in enumerate(rows):
+        kind = error_cycle[idx % len(error_cycle)]
+        if kind == "type_mismatch":
+            df.at[row, "age"] = "invalid"
+            errors.append(InjectedError(row=row, column="age", error_type=kind))
+        elif kind == "missing_value":
+            df.at[row, "salary"] = None
+            errors.append(InjectedError(row=row, column="salary", error_type=kind))
+        else:
+            df.at[row, "salary"] = -1
+            errors.append(InjectedError(row=row, column="salary", error_type=kind))
+
+    return errors
+
+
+def generate_scalability_dataset(
+    rows: int = 1000, error_rate: float = 0.05
+) -> GroundTruth:
+    """
+    Large dataset for scalability evaluation. Single variant, mixed
+    error types, proportional rather than fixed error count.
+    """
+    filename = "eval_scalability.csv"
+    output_path = BROKEN_DIR / filename
+    df = generate_base_dataset_at_scale(rows)
+    errors = inject_proportional_errors(df, error_rate=error_rate)
+    save_dataset(df, output_path)
+
+    return GroundTruth(
+        dataset_name="scalability",
+        filename=filename,
+        dataset_category="scalability",
+        total_rows=len(df),
+        injected_errors=errors,
+        expected_quarantine_rows=len(errors),
+    )
+
+
 # -----------------------------
 # Generate all datasets at once
 # -----------------------------
@@ -287,6 +363,7 @@ def generate_all() -> dict[str, GroundTruth]:
         "dataset_1": generate_dataset_1(),
         "dataset_2": generate_dataset_2(),
         "dataset_3": generate_dataset_3(),
+        "scalability": generate_scalability_dataset(),
     }
 
 

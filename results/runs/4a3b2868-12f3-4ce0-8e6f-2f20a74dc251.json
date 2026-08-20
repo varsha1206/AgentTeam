@@ -1,0 +1,278 @@
+{
+  "run_id": "4a3b2868-12f3-4ce0-8e6f-2f20a74dc251",
+  "config": {
+    "experiment_name": "scalability_detection",
+    "repair_enabled": true,
+    "plugin_cache_enabled": true,
+    "llm_rule_inference_enabled": true,
+    "failure_type": "none"
+  },
+  "ground_truth": {
+    "dataset_name": "scalability",
+    "filename": "eval_scalability.csv",
+    "dataset_category": "scalability",
+    "total_rows": 1000,
+    "injected_errors": [
+      {
+        "row": 654,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 114,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 25,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 759,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 281,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 250,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 228,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 142,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 754,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 104,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 692,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 758,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 913,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 558,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 89,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 604,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 432,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 32,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 30,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 95,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 223,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 238,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 517,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 616,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 27,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 574,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 203,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 733,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 665,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 718,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 429,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 225,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 459,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 603,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 284,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 828,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 890,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 6,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 777,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 825,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 163,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 714,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 348,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 159,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 220,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 980,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 781,
+        "column": "salary",
+        "error_type": "missing_value"
+      },
+      {
+        "row": 344,
+        "column": "salary",
+        "error_type": "range_violation"
+      },
+      {
+        "row": 94,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 389,
+        "column": "salary",
+        "error_type": "missing_value"
+      }
+    ],
+    "expected_quarantine_rows": 50
+  },
+  "detection_accuracy": 0.0,
+  "repair_success": false,
+  "repair_attempts": 0,
+  "pipeline_success": false,
+  "execution_time_seconds": 15.13,
+  "llm_calls_made": 7,
+  "silver_row_count": 0,
+  "quarantine_row_count": 0,
+  "notes": ""
+}

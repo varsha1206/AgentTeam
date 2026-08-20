@@ -104,6 +104,7 @@ class AgentInstruction(BaseModel):
         "transform_and_validate",
         "validate_only",
         "repair_transformation",
+        "only_stagestandardize_bronze_files_to_csv",
         "repair_retrieval",
     ] = Field(description="What the agent should do this invocation.")
 

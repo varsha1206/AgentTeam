@@ -96,9 +96,9 @@ class ValidationNode(BaseAgentNode):
             errors=all_errors,
             summary=f"Validated {len(results)} files — {len(silver_files)} passed.",
         )
-        need_repair = False
+        can_repair = False
         if overall_outcome == "FAIL":
-            need_repair = any(e.should_repair for e in all_errors)
+            can_repair = any(e.should_repair for e in all_errors)
 
         logger.info(f"Validation complete — outcome: {overall_outcome}")
         return (
@@ -107,7 +107,7 @@ class ValidationNode(BaseAgentNode):
                 "silver_layer": silver_files,
                 "errors": all_errors,
             },
-            need_repair,
+            can_repair,
         )
 
     def as_node(self):
@@ -148,6 +148,7 @@ class ValidationNode(BaseAgentNode):
             all_messages = []
             all_results = []
             repair_target = None
+            needs_repair = state.get("needs_repair")
             repair_error = None
             repair_script_path = None
 
@@ -157,20 +158,26 @@ class ValidationNode(BaseAgentNode):
                 all_results.append(self.parse_result(messages))
 
                 # detect repair need per file — use first file that needs repair
-                if repair_target is None:
+                if needs_repair is None:
                     repair_target, repair_error, repair_script_path = (
                         self._detect_repair_needed(messages, file_path)
                     )
+                    if repair_target:
+                        needs_repair = True
+                    else:
+                        needs_repair = False
 
-            state_update, need_repair = self.update_state(state, all_results)
+            state_update, can_repair = self.update_state(state, all_results)
             state_update["messages"] = all_messages
 
             if (
-                need_repair
+                can_repair and needs_repair
             ):  # Validation failed with OUTCOME: FAIL and repairable errors
                 state_update["repair_error"] = state_update.get("errors")
 
-            if repair_target:  # Validation failed with SCRIPT_FAILED
+            if (repair_target == "validation") or (
+                repair_target == "transformation"
+            ):  # Validation failed with SCRIPT_FAILED
                 state_update["repair_target"] = repair_target
                 state_update["repair_error"] = repair_error
                 state_update["repair_script_path"] = repair_script_path
@@ -203,7 +210,7 @@ class ValidationRouter(BaseRouter):
         )
 
     def route(self, state: GraphState) -> str:
-        if state.get("repair_target"):
+        if state.get("needs_repair") is True:
             logger.info("Routing to repair_agent — repair needed")
             return "repair_agent"
         result = self.get_result(state)

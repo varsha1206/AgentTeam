@@ -13,6 +13,7 @@ from pathlib import Path
 import pandas as pd
 from langchain.tools import tool
 
+from agentteam.evaluation.test_injection import get_injection
 from agentteam.models.structured_outputs import GeneratedScript
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ class RetrievalTools:
         self.bronze_dir = bronze_dir
         self.generated_dir = generated_dir
         self.staged_input_dir = staged_input_dir
+        self.workspace_path = input_dir.parent
         self._validate_dirs()
 
     # -----------------------------
@@ -172,6 +174,47 @@ class RetrievalTools:
         logger.info(f"Written to {out_path}")
         return f"Written to {out_path}"
 
+    def _get_test_failure_type(self, filename: str) -> str | None:
+        """
+        Checks the evaluation harness's injection marker for this script.
+        Applies only during controlled evaluation runs — never reads
+        validation_rules.yaml, so it cannot be confused with user-defined
+        pipeline configuration.
+        """
+        stem = filename.replace("retrieval_", "")
+        if ".py" in stem:
+            stem = stem.replace(".py", "")
+        if ".csv" not in stem:
+            stem += ".csv"
+        print(
+            f"Checking for test failure injection for {stem} in {self.workspace_path}"
+        )
+
+        return get_injection(self.workspace_path, stem)
+
+    def _corrupt_script(self, code: str, failure_type: str) -> str:
+        if failure_type == "syntax_error":
+            return "this is not valid python!!!\n" + code
+
+        lines = code.split("\n")
+        insert_at = 0
+        for i, line in enumerate(lines):
+            if line.startswith("import ") or line.startswith("from "):
+                insert_at = i + 1
+
+        if failure_type == "import_error":
+            lines.insert(insert_at, "import this_module_does_not_exist_xyz123")
+            return "\n".join(lines)
+
+        if failure_type == "runtime_type_error":
+            lines.insert(
+                insert_at,
+                "_INJECTED_TEST_VAR = {'a': 1}['__nonexistent_key_for_test_injection__']",
+            )
+            return "\n".join(lines)
+
+        return code
+
     # Code Generation
     def write_script(self, script: GeneratedScript) -> str:
         """Save a GeneratedScript to workspace/generated/."""
@@ -179,6 +222,13 @@ class RetrievalTools:
         script_path.parent.mkdir(parents=True, exist_ok=True)
         script_path.write_text(script.code, encoding="utf-8")
         logger.info(f"Script written: {script_path} — {script.description}")
+
+        # call site — unchanged shape, new source
+        failure_type = self._get_test_failure_type(script.filename)
+        if failure_type:
+            corrupted = self._corrupt_script(script.code, failure_type)
+            script_path.write_text(corrupted, encoding="utf-8")
+            logger.debug(f"Test error injected into {script.filename}: {failure_type}")
         return str(script_path)
 
     def execute_script(self, script_path: str) -> str:

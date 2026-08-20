@@ -1,0 +1,43 @@
+{
+  "run_id": "265f10e2-0eaa-4dde-8f76-34b7adddd5b8",
+  "config": {
+    "experiment_name": "repair_import_error_without_repair",
+    "repair_enabled": false,
+    "plugin_cache_enabled": true,
+    "llm_rule_inference_enabled": true,
+    "failure_type": "import_error"
+  },
+  "ground_truth": {
+    "dataset_name": "dataset_1_type_mismatches",
+    "filename": "eval_dataset_1.csv",
+    "dataset_category": "controlled",
+    "total_rows": 20,
+    "injected_errors": [
+      {
+        "row": 2,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 7,
+        "column": "age",
+        "error_type": "type_mismatch"
+      },
+      {
+        "row": 11,
+        "column": "salary",
+        "error_type": "range_violation"
+      }
+    ],
+    "expected_quarantine_rows": 3
+  },
+  "detection_accuracy": 0.0,
+  "repair_success": true,
+  "repair_attempts": 1,
+  "pipeline_success": false,
+  "execution_time_seconds": 29.71,
+  "llm_calls_made": 11,
+  "silver_row_count": 0,
+  "quarantine_row_count": 0,
+  "notes": ""
+}

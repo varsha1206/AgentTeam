@@ -95,6 +95,8 @@ class GraphState(AgentState):
     # Repair Agent cap
     repair_attempts: Annotated[int, lambda x, y: y]  # always replace with latest value
 
+    needs_repair: Annotated[bool | None, lambda x, y: y]
+
     # Error handling
     errors: Annotated[list[ErrorReport] | None, operator.add]
 

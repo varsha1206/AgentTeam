@@ -67,7 +67,6 @@ class RepairNode(BaseAgentNode):
         return {
             "repaired_data": result.model_dump(),
             "repair_attempts": repair_attempts,
-            "repair_target": None,
             "repair_error": result.errors,
             "repair_script_path": result.script_path,
             "errors": result.errors,
@@ -96,12 +95,22 @@ class RepairRouter(BaseRouter):
 
     def route(self, state: GraphState) -> str:
         repair_attempts = state.get("repair_attempts", 0)
-        if repair_attempts >= 2:
+        if repair_attempts > 2:
             logger.warning(
                 f"Max repair attempts reached ({repair_attempts}), ending pipeline"
             )
             return "end"
         result = self.get_result(state)
+        next_stage = ""
         if result.status == "complete":
-            return "validation_agent"
-        return "end"
+            state["needs_repair"] = False
+            if state["repair_target"] == "retrieval":
+                logger.info("Repair complete for retrieval stage")
+                next_stage = "retrieval_agent"
+            elif state["repair_target"] == "transformation":
+                logger.info("Repair complete for transformation stage")
+                next_stage = "validation_agent"
+            else:
+                logger.info("Repair complete for validation stage")
+                next_stage = "end"
+        return next_stage

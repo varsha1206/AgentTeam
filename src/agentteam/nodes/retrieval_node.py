@@ -93,7 +93,9 @@ class RetrievalNode(BaseAgentNode):
             input_files = list((self.workspace / "input").rglob("*"))
             all_messages = []
             all_results = []
-            repair_target = None
+            needs_repair = state.get("needs_repair")
+            print(f"Needs repair: {needs_repair}")
+            repair_target = state["repair_target"]
             repair_error = None
             repair_script_path = None
             data_sources: list[DataSource] = []
@@ -112,21 +114,34 @@ class RetrievalNode(BaseAgentNode):
             logger.info(
                 f"Data sources for retrieval: {[ds.path for ds in data_sources]}"
             )
-
-            instruction = self.build_instructions("full_pipeline", data_sources)
+            if repair_target is None:
+                task = "full_pipeline"
+            else:
+                task = "only_stagestandardize_bronze_files_to_csv"
+            logger.info(
+                "Task for retrieval agent: %s and repair target: %s",
+                task,
+                repair_target,
+            )
+            instruction = self.build_instructions(task, data_sources)
+            print(f"Instruction for retrieval agent: {instruction}")
             messages = self._invoke_agent(agent, instruction)
             all_messages.extend(messages)
             all_results.append(self.parse_result(messages))
 
-            if repair_target is None:
+            if needs_repair is None:
                 repair_target, repair_error, repair_script_path = (
                     self._detect_repair_needed(messages, str(input_file))
                 )
+                if repair_target:
+                    needs_repair = True
+                else:
+                    needs_repair = False
 
             state_update = self.update_state(state, all_results)
             state_update["messages"] = all_messages
 
-            if repair_target:
+            if needs_repair:
                 state_update["repair_target"] = repair_target
                 state_update["repair_error"] = repair_error
                 state_update["repair_script_path"] = repair_script_path
@@ -158,7 +173,7 @@ class RetrievalRouter(BaseRouter):
         )
 
     def route(self, state: GraphState) -> str:
-        if state.get("repair_target") == "retrieval":
+        if state.get("needs_repair") is True:
             logger.info("Routing to repair_agent — retrieval script crashed")
             return "repair_agent"
         result = self.get_result(state)

@@ -81,7 +81,7 @@ system_prompt: |
      status is PASS if valid_rows > 0, FAIL if valid_rows == 0.
 
   7. Call write_script then execute_script for the validation script.
-     If SCRIPT_FAILED: report error immediately. Stop.
+     If SCRIPT_FAILED: report error immediately. END your process and report the error. DO NOT ATTEMPT TO RE-WRITE, route to repair agent.
      If SCRIPT_SUCCESS: parse JSON to get status, valid_rows, quarantined_rows, errors.
 
   8. Call write_validation_report with status, validation_violations, and source_file set to target_file.
@@ -94,6 +94,10 @@ system_prompt: |
   - Wrap all script logic in try/except, print error JSON on failure.
   - write_script and execute_script called at most once for each staged input file.
   - No diagnostic scripts. No exploratory scripts. If output is unexpected, report and stop.
+
+  ## IMPORTANT RULE
+  - write_script and execute_script called MAXIMUM ONCE for each staged input file
+  - Never attempt to re-write a script if it fails. If a script fails, report the error and stop. Do not attempt to re-write or re-run the script.
 
   ## Plugin rules
   - Plugin function signature must be exactly: def <operation>(df: pd.DataFrame, rule: TransformationRule) -> pd.DataFrame

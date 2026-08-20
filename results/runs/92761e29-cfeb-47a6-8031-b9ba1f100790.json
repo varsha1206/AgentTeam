@@ -1,0 +1,27 @@
+{
+  "run_id": "92761e29-cfeb-47a6-8031-b9ba1f100790",
+  "config": {
+    "experiment_name": "clean_detection",
+    "repair_enabled": true,
+    "plugin_cache_enabled": true,
+    "llm_rule_inference_enabled": true,
+    "failure_type": "none"
+  },
+  "ground_truth": {
+    "dataset_name": "clean",
+    "filename": "eval_clean.csv",
+    "dataset_category": "controlled",
+    "total_rows": 20,
+    "injected_errors": [],
+    "expected_quarantine_rows": 0
+  },
+  "detection_accuracy": 1.0,
+  "repair_success": false,
+  "repair_attempts": 0,
+  "pipeline_success": true,
+  "execution_time_seconds": 44.81,
+  "llm_calls_made": 19,
+  "silver_row_count": 20,
+  "quarantine_row_count": 0,
+  "notes": ""
+}

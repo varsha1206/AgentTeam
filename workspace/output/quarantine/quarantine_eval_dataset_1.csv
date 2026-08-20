@@ -1,4 +1,0 @@
-id,name,age,salary,department,employee_id,quarantine_reason
-3,Carol,,52000,FINANCE,EMP00003,Non-nullable column 'age' has null value
-8,Henry,,57000,FINANCE,EMP00008,Non-nullable column 'age' has null value
-12,Leo,36.0,-999,IT,EMP00012,Column 'salary' value -999.0 is below minimum 0.0
