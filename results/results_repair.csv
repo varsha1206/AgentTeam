@@ -5,3 +5,6 @@ d00557f0-001b-4e66-b0ef-e7221bf1ed4f,dataset_1_type_mismatches,runtime_type_erro
 246e15e1-3e2b-47a8-8b3f-832865c39f53,dataset_1_type_mismatches,syntax_error,True,1,69.97,29,
 41e629fe-8037-4cc9-8d64-1de731702622,dataset_1_type_mismatches,import_error,True,1,72.1,28,
 80099227-5767-4c55-a8a9-07bacc6727fc,dataset_1_type_mismatches,runtime_type_error,True,1,68.73,27,
+0df468a3-049c-450e-a8f7-529008431736,dataset_1_type_mismatches,syntax_error,True,2,80.03,30,
+0df468a3-049c-450e-a8f7-529008431736,dataset_1_type_mismatches,import_error,True,2,81.08,31,
+0df468a3-049c-450e-a8f7-529008431736,dataset_1_type_mismatches,runtime_type_error,True,2,79.34,30,

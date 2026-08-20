@@ -94,7 +94,6 @@ class RetrievalNode(BaseAgentNode):
             all_messages = []
             all_results = []
             needs_repair = state.get("needs_repair")
-            print(f"Needs repair: {needs_repair}")
             repair_target = state["repair_target"]
             repair_error = None
             repair_script_path = None
@@ -124,7 +123,6 @@ class RetrievalNode(BaseAgentNode):
                 repair_target,
             )
             instruction = self.build_instructions(task, data_sources)
-            print(f"Instruction for retrieval agent: {instruction}")
             messages = self._invoke_agent(agent, instruction)
             all_messages.extend(messages)
             all_results.append(self.parse_result(messages))

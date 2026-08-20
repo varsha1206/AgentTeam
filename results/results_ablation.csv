@@ -1,9 +1,9 @@
 run_id,dataset_name,failure_type,repair_enabled,pipeline_success,silver_row_count,quarantine_row_count,execution_time_seconds,llm_calls_made,notes
-0e8d6254-55d0-4e5e-b9dc-19a7c9c4f931,dataset_1_type_mismatches,syntax_error,True,False,0,3,73.45,24,
+0e8d6254-55d0-4e5e-b9dc-19a7c9c4f931,dataset_1_type_mismatches,syntax_error,True,False,17,3,73.45,24,
 89410260-6a19-4014-a551-5e3b42af9a61,dataset_1_type_mismatches,syntax_error,False,False,0,0,43.33,16
-23fa5311-4ad2-4272-885e-55dee3cb68e6,dataset_1_type_mismatches,import_error,True,False,0,3,60.69,22,
+23fa5311-4ad2-4272-885e-55dee3cb68e6,dataset_1_type_mismatches,import_error,True,False,17,3,60.69,22,
 e54eeeca-2965-4b3b-b018-82bb22b72c84,dataset_1_type_mismatches,import_error,False,False,0,0,45.45,16,
-d00557f0-001b-4e66-b0ef-e7221bf1ed4f,dataset_1_type_mismatches,runtime_type_error,True,False,0,3,60.77,22,
+d00557f0-001b-4e66-b0ef-e7221bf1ed4f,dataset_1_type_mismatches,runtime_type_error,True,False,17,3,60.77,22,
 a903603d-4223-4e67-b746-663a9eec5c3a,dataset_1_type_mismatches,runtime_type_error,False,False,0,0,43.7,16,
 246e15e1-3e2b-47a8-8b3f-832865c39f53,dataset_1_type_mismatches,syntax_error,True,True,17,3,69.97,29,
 03464741-0639-48d9-b2ff-90d89f3d8cb2,dataset_1_type_mismatches,syntax_error,False,False,0,0,17.03,7,
@@ -11,3 +11,9 @@ a903603d-4223-4e67-b746-663a9eec5c3a,dataset_1_type_mismatches,runtime_type_erro
 265f10e2-0eaa-4dde-8f76-34b7adddd5b8,dataset_1_type_mismatches,import_error,False,False,0,0,19.71,8,
 80099227-5767-4c55-a8a9-07bacc6727fc,dataset_1_type_mismatches,runtime_type_error,True,True,17,3,68.73,27,
 bd3c3f26-6943-4a93-b225-27dbd43d3e61,dataset_1_type_mismatches,runtime_type_error,False,False,0,0,18.55,7,
+0df468a3-049c-450e-a8f7-529008431736,dataset_1_type_mismatches,syntax_error,True,False,17,3,80.03,30,
+3084561a-653a-43d7-9572-f45bedde3c0e,dataset_1_type_mismatches,syntax_error,False,False,0,0,14.86,7,
+0df468a3-049c-450e-a8f7-529008431736,dataset_1_type_mismatches,import_error,True,False,17,3,81.08,31,
+3084561a-653a-43d7-9572-f45bedde3c0e,dataset_1_type_mismatches,import_error,False,False,0,0,14.72,7,
+0df468a3-049c-450e-a8f7-529008431736,dataset_1_type_mismatches,runtime_type_error,True,False,17,3,79.34,30,
+3084561a-653a-43d7-9572-f45bedde3c0e,dataset_1_type_mismatches,runtime_type_error,False,False,0,0,15.01,7,
