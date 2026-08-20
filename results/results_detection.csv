@@ -1,6 +1,6 @@
-run_id,dataset_name,dataset_category,total_rows,expected_quarantine_rows,quarantine_row_count,silver_row_count,detection_accuracy,execution_time_seconds,llm_calls_made,llm_cost,notes
-92761e29-cfeb-47a6-8031-b9ba1f100790,clean,controlled,20,0,0,20,1.0,44.81,19,0.10,
-52b59703-4205-4b95-92e1-014e052d219d,dataset_1_type_mismatches,controlled,20,3,3,17,1.0,47.7,20,0.10,
-2b80e15c-4fa2-47da-abf7-3c7deeadec2d,dataset_2_missing_values,controlled,20,3,3,17,1.0,46.31,20,0.11,
-495d2d40-9e61-4efc-abce-ebfa48bb5ff4,dataset_3_mixed_errors,controlled,20,3,3,17,1.0,45.96,20,0.10,
-ad3e832d-07ae-41c1-a183-82828b6bb1e5,scalability,scalability,1000,50,50,950,1.0,58.87,21,0.12, plugins were generated
+dataset_name,dataset_category,total_rows,expected_quarantine_rows,quarantine_row_count,silver_row_count,detection_accuracy,execution_time_seconds,llm_calls_made,llm_cost,notes
+clean,controlled,20,0,0,20,1.0,44.81,19,0.10,
+dataset_1_type_mismatches,controlled,20,3,3,17,1.0,47.7,20,0.10,
+dataset_2_missing_values,controlled,20,3,3,17,1.0,46.31,20,0.11,
+dataset_3_mixed_errors,controlled,20,3,3,17,1.0,45.96,20,0.10,
+scalability,scalability,1000,50,50,950,1.0,58.87,21,0.12, plugins were generated
