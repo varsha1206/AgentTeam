@@ -27,11 +27,12 @@ class GroundTruth(BaseModel):
     dataset_name: str
     filename: str
 
-    dataset_category: Literal["controlled", "scalability"] = "controlled"
+    dataset_category: Literal["controlled", "scalability", "real_world"] = "controlled"
+    source_format: Literal["csv", "json"] = "csv"
 
-    total_rows: int
+    total_rows: int | None
     injected_errors: list[InjectedError]
-    expected_quarantine_rows: int = Field(
+    expected_quarantine_rows: int | None = Field(
         description="Rows expected to end up in quarantine."
     )
 
@@ -59,7 +60,7 @@ class ExperimentResult(BaseModel):
 
     ground_truth: GroundTruth
 
-    detection_accuracy: float
+    detection_accuracy: float | None
 
     repair_success: bool
 

@@ -1,0 +1,16 @@
+[
+  {
+    "status": "FAIL",
+    "row_count": 0,
+    "column_count": 3,
+    "validation_violations": [
+      "Column 'country' is non-nullable but has null value",
+      "Column 'major_regions' is non-nullable but has null value",
+      "Column 'percentage_of_world_production' value 133.3 exceeds maximum 100.0",
+      "Column 'percentage_of_world_production' value -0.5 is below minimum 0.0"
+    ],
+    "quarantined_rows": 20,
+    "summary": "All 20 rows quarantined due to null values in non-nullable columns, invalid percentage values outside 0-100 range.",
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\top_coffee_producing_countries.csv"
+  }
+]

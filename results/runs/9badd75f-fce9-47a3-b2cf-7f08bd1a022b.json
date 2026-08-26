@@ -1,0 +1,28 @@
+{
+  "run_id": "9badd75f-fce9-47a3-b2cf-7f08bd1a022b",
+  "config": {
+    "experiment_name": "aw_fb_data_consistency_run2",
+    "repair_enabled": true,
+    "plugin_cache_enabled": true,
+    "llm_rule_inference_enabled": true,
+    "failure_type": "none"
+  },
+  "ground_truth": {
+    "dataset_name": "aw_fb_data",
+    "filename": "aw_fb_data.csv",
+    "dataset_category": "real_world",
+    "source_format": "csv",
+    "total_rows": 6264,
+    "injected_errors": [],
+    "expected_quarantine_rows": null
+  },
+  "detection_accuracy": null,
+  "repair_success": false,
+  "repair_attempts": 0,
+  "pipeline_success": true,
+  "execution_time_seconds": 57.17,
+  "llm_calls_made": 19,
+  "silver_row_count": 6182,
+  "quarantine_row_count": 82,
+  "notes": ""
+}

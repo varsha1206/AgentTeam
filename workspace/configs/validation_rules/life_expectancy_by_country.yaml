@@ -1,0 +1,36 @@
+schema:
+  rank:
+    type: int
+    nullable: false
+
+  country:
+    type: str
+    nullable: false
+    min_length: 1
+
+  life_expectancy_total:
+    type: float
+    nullable: false
+    min: 0
+    max: 100
+
+  life_expectancy_male:
+    type: float
+    nullable: false
+    min: 0
+    max: 100
+
+  life_expectancy_female:
+    type: float
+    nullable: false
+    min: 0
+    max: 100
+
+transformations:
+  - operation: coerce_life_expectancy_to_float
+    selection: infer
+    description: Convert life expectancy fields to float.
+
+  - operation: trim_string_columns
+    selection: infer
+    description: Remove leading and trailing whitespace from string columns.

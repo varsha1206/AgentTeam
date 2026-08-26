@@ -1,0 +1,25 @@
+[
+  {
+    "source_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\staged_input\\top_coffee_producing_countries.csv",
+    "output_file": "C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\temp\\transformed_top_coffee_producing_countries.csv",
+    "total_rows_input": 20,
+    "total_rows_output": 20,
+    "quarantined_rows": 0,
+    "transformations_applied": [
+      {
+        "operation": "coerce_percentage_to_float",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Convert percentage to float"
+      },
+      {
+        "operation": "trim_string_columns",
+        "columns": [],
+        "rows_affected": 20,
+        "reason": "Remove leading and trailing whitespace from string columns"
+      }
+    ],
+    "inferred_rules": false,
+    "summary": "Transformed 20 rows with percentage coercion and string trimming operations."
+  }
+]

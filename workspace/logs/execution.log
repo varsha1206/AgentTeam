@@ -1,122 +1,62 @@
-17:52:22 INFO     __main__: Running experiment: repair_syntax_error_with_repair
-17:52:22 INFO     __main__: Workspace prepared — artifacts cleared, plugins preserved
-17:52:22 INFO     __main__: config repair enable : True
-17:52:22 INFO     __main__: Configuring failure: syntax_error
-17:52:22 INFO     __main__: Dataset copied to input: eval_dataset_1.csv
-17:52:23 INFO     agentteam.agents.orchestrator_agent: Loading orchestrator config...
-17:52:24 INFO     agentteam.agents.orchestrator_agent: Orchestrator config loaded successfully
-17:52:24 INFO     agentteam.agents.retrieval_agent: Loading retrieval agent config...
-17:52:24 INFO     agentteam.agents.retrieval_agent: Retrieval agent config loaded successfully
-17:52:24 INFO     agentteam.agents.validation_agent: Loading validation agent config...
-17:52:25 INFO     agentteam.agents.validation_agent: Validation agent config loaded successfully
-17:52:25 INFO     agentteam.utils.rule_executor: Registered operation: coerce_employee_age_to_int
-17:52:25 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_employee_age_to_int
-17:52:25 INFO     agentteam.utils.rule_executor: Registered operation: create_unique_employee_id
-17:52:25 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: create_unique_employee_id
-17:52:25 INFO     agentteam.utils.rule_executor: Registered operation: normalize_department_name
-17:52:25 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: normalize_department_name
-17:52:25 INFO     agentteam.utils.rule_executor: Registered operation: trim_string_columns
-17:52:25 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: trim_string_columns
-17:52:25 INFO     agentteam.utils.plugin_registry: Loaded 4 plugins: ['coerce_employee_age_to_int', 'create_unique_employee_id', 'normalize_department_name', 'trim_string_columns']
-17:52:25 INFO     agentteam.agents.repair_agent: Loading repair agent config...
-17:52:25 INFO     agentteam.agents.repair_agent: Repair agent config loaded successfully
-17:52:25 INFO     agentteam.nodes.retrieval_node: Running retrieval agent...
-17:52:25 INFO     agentteam.nodes.retrieval_node: Detected CSV file: eval_dataset_1.csv
-17:52:25 INFO     agentteam.nodes.retrieval_node: Data source inferred for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\eval_dataset_1.csv
-17:52:25 INFO     agentteam.nodes.retrieval_node: Data sources for retrieval: ['C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\input\\eval_dataset_1.csv']
-17:52:25 INFO     agentteam.nodes.retrieval_node: Task for retrieval agent: full_pipeline and repair target: None
-17:52:29 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_eval_dataset_1.py — Reads CSV file, analyzes structure, prints JSON stats, and writes raw data to bronze directory
-17:52:31 ERROR    agentteam.tools.retrieval_agent.retrieval_tools: Retrieval script failed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_eval_dataset_1.py —   File "C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_eval_dataset_1.py", line 1
-    this is not valid python!!!
-                      ^^^^^^
-SyntaxError: invalid s
-17:52:35 WARNING  agentteam.utils.base_node: retrieval failure detected for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\eval_dataset_1.csv:   File "C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_eval_dataset_1.py", line 1
-    this is not valid python!!!
-                      ^^^^^^
-SyntaxError: invalid s
-17:52:35 INFO     agentteam.nodes.retrieval_node: Repair needed — target: retrieval
-17:52:36 INFO     agentteam.utils.routing_utils: Routing decision: repair_agent — The retrieval agent failed with a script_crash error (invalid Python syntax) marked as should_repair=True, which indicates the repair_agent should attempt to fix the corrupted script file.
-17:52:41 INFO     agentteam.tools.repair_agent.repair_tools: Repaired script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\repair_retrieval_eval_dataset_1.py — Remove invalid Python syntax from line 1 that caused SyntaxError
-17:52:45 INFO     agentteam.tools.repair_agent.repair_tools: Script executed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\repair_retrieval_eval_dataset_1.py
-17:52:49 INFO     agentteam.nodes.repair_node: Repair status: complete — attempt 1
-17:52:49 INFO     agentteam.nodes.repair_node: Repair complete for retrieval stage
-17:52:49 INFO     agentteam.nodes.retrieval_node: Running retrieval agent...
-17:52:49 INFO     agentteam.nodes.retrieval_node: Detected CSV file: eval_dataset_1.csv
-17:52:49 INFO     agentteam.nodes.retrieval_node: Data source inferred for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\eval_dataset_1.csv
-17:52:49 INFO     agentteam.nodes.retrieval_node: Data sources for retrieval: ['C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\input\\eval_dataset_1.csv']
-17:52:49 INFO     agentteam.nodes.retrieval_node: Task for retrieval agent: only_stagestandardize_bronze_files_to_csv and repair target: retrieval
-17:52:50 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Standardized eval_dataset_1.csv -> eval_dataset_1.csv
-17:52:54 INFO     agentteam.utils.routing_utils: Routing decision: validation_agent — The agent completed successfully with no errors and standardization is finished, so the next logical step in the pipeline is to validate the converted CSV files.
-17:52:56 INFO     agentteam.tools.validation_agent.validator_tools: Loaded validation rules for eval_dataset_1.csv: 5 schema rules, 4 transformations
-17:52:56 INFO     agentteam.tools.validation_agent.validator_tools: Read sample: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\eval_dataset_1.csv — 20 rows, 5 cols
-17:53:01 INFO     agentteam.tools.validation_agent.validator_tools: Inferred columns for transformations: {'create_unique_employee_id': ['id'], 'coerce_employee_age_to_int': ['age'], 'normalize_department_name': ['department'], 'trim_string_columns': ['name', 'department']}
-17:53:01 INFO     agentteam.tools.validation_agent.validator_tools: operation='create_unique_employee_id' columns=['id'] selection='explicit' description='Generate a unique employee identifier.' fill_value=None
-17:53:01 INFO     agentteam.tools.validation_agent.validator_tools: operation='coerce_employee_age_to_int' columns=['age'] selection='explicit' description='Convert employee age to integer.' fill_value=None
-17:53:01 INFO     agentteam.tools.validation_agent.validator_tools: operation='normalize_department_name' columns=['department'] selection='explicit' description='Normalize department names to a consistent format.' fill_value=None
-17:53:01 INFO     agentteam.tools.validation_agent.validator_tools: operation='trim_string_columns' columns=['name', 'department'] selection='explicit' description='Remove leading and trailing whitespace from string columns.' fill_value=None
-17:53:01 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 4, 'built_in': 4, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int', 'normalize_department_name', 'trim_string_columns'], 'pending_operations': []}
-17:53:01 INFO     agentteam.tools.validation_agent.validator_tools: Execution plan: {'total_steps': 4, 'built_in': 4, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int', 'normalize_department_name', 'trim_string_columns'], 'pending_operations': []}
-17:53:05 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 4, 'built_in': 4, 'plugin': 0, 'needs_generation': 0, 'operations': ['create_unique_employee_id', 'coerce_employee_age_to_int', 'normalize_department_name', 'trim_string_columns'], 'pending_operations': []}
-17:53:05 INFO     agentteam.utils.execution_planner: Executing: create_unique_employee_id (built_in) on columns: []
-17:53:05 INFO     agentteam.utils.execution_planner: Executing: coerce_employee_age_to_int (built_in) on columns: []
-17:53:05 INFO     agentteam.utils.execution_planner: Executing: normalize_department_name (built_in) on columns: []
-17:53:05 INFO     agentteam.utils.execution_planner: Executing: trim_string_columns (built_in) on columns: []
-17:53:05 INFO     agentteam.tools.validation_agent.validator_tools: Transformation complete: 20 rows → C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_eval_dataset_1.csv
-17:53:08 INFO     agentteam.tools.validation_agent.validator_tools: Transformation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\transformation_report.json — Applied 4 transformations to eval_dataset_1.csv: created unique IDs, coerced age to integer, normalized departments, and trimmed strings.
-17:53:15 INFO     agentteam.tools.validation_agent.validator_tools: Validation script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_eval_dataset_1.csv.py — Validates transformed eval_dataset_1.csv against schema rules and segregates invalid rows to quarantine.
-17:53:17 ERROR    agentteam.tools.validation_agent.validator_tools: Script failed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_eval_dataset_1.csv.py —   File "C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_eval_dataset_1.csv.py", line 1
-    this is not valid python!!!
-                      ^^^^^^
-SyntaxError: inva
-17:53:21 WARNING  agentteam.utils.base_node: validation failure detected for eval_dataset_1.csv:   File "C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_eval_dataset_1.csv.py", line 1
-    this is not valid python!!!
-                      ^^^^^^
-SyntaxError: inva
-17:53:21 INFO     agentteam.nodes.validation_node: Validation complete — outcome: FAIL
-17:53:21 INFO     agentteam.nodes.validation_node: Repair needed — target: validation
-17:53:23 INFO     agentteam.utils.routing_utils: Routing decision: repair_agent — Validation failed with a script crash error (SyntaxError), and the error has should_repair=False overridden by the rule that script crashes should route to repair_agent for correction.
-17:53:37 INFO     agentteam.tools.repair_agent.repair_tools: Repaired script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\repair_validation_eval_dataset_1.csv.py — Fixed syntax error by removing invalid comment line at start of validation script
-17:53:40 INFO     agentteam.tools.repair_agent.repair_tools: Script executed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\repair_validation_eval_dataset_1.csv.py
-17:53:45 INFO     agentteam.nodes.repair_node: Repair status: complete — attempt 2
-17:53:45 INFO     agentteam.nodes.repair_node: Repair complete for validation stage
-17:53:45 INFO     agentteam.storage.sqlite_store: Metadata schema initialised: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\agentteam.db
-17:53:45 INFO     agentteam.storage.sqlite_store: Loading SQLiteStore config...
-17:53:45 INFO     agentteam.storage.sqlite_store: SQLiteStore config loaded successfully
-17:53:45 INFO     agentteam.storage.sqlite_store: Run persisted: 0df468a3-049c-450e-a8f7-529008431736 — failed
-17:53:47 INFO     agentteam.storage.sqlite_store: Schema inferred for quarantine_eval_dataset_1.csv: 6 columns
-17:53:47 INFO     agentteam.storage.sqlite_store: Quarantine persisted: quarantine_eval_dataset_1.csv → quarantine_quarantine_eval_dataset_1 — 3 rows
-17:53:47 INFO     __main__: Experiment complete: repair_syntax_error_with_repair
-17:56:34 INFO     __main__: Running experiment: repair_syntax_error_without_repair
-17:56:34 INFO     __main__: Workspace prepared — artifacts cleared, plugins preserved
-17:56:34 INFO     __main__: config repair enable : False
-17:56:34 INFO     __main__: Configuring failure: syntax_error
-17:56:34 INFO     __main__: Dataset copied to input: eval_dataset_1.csv
-17:56:34 INFO     agentteam.agents.orchestrator_agent: Loading orchestrator config...
-17:56:34 INFO     agentteam.agents.orchestrator_agent: Orchestrator config loaded successfully
-17:56:34 INFO     agentteam.agents.retrieval_agent: Loading retrieval agent config...
-17:56:34 INFO     agentteam.agents.retrieval_agent: Retrieval agent config loaded successfully
-17:56:34 INFO     agentteam.agents.validation_agent: Loading validation agent config...
-17:56:35 INFO     agentteam.agents.validation_agent: Validation agent config loaded successfully
-17:56:35 INFO     agentteam.agents.repair_agent: Loading repair agent config...
-17:56:35 INFO     agentteam.agents.repair_agent: Repair agent config loaded successfully
-17:56:35 INFO     agentteam.nodes.retrieval_node: Running retrieval agent...
-17:56:35 INFO     agentteam.nodes.retrieval_node: Detected CSV file: eval_dataset_1.csv
-17:56:35 INFO     agentteam.nodes.retrieval_node: Data source inferred for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\eval_dataset_1.csv
-17:56:35 INFO     agentteam.nodes.retrieval_node: Data sources for retrieval: ['C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\input\\eval_dataset_1.csv']
-17:56:35 INFO     agentteam.nodes.retrieval_node: Task for retrieval agent: full_pipeline and repair target: None
-17:56:40 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_eval_dataset_1.py — Reads eval_dataset_1.csv, analyzes its structure and null counts, and writes it to bronze directory.
-17:56:42 ERROR    agentteam.tools.retrieval_agent.retrieval_tools: Retrieval script failed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_eval_dataset_1.py —   File "C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_eval_dataset_1.py", line 1
-    this is not valid python!!!
-                      ^^^^^^
-SyntaxError: invalid s
-17:56:49 WARNING  agentteam.utils.base_node: retrieval failure detected for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\eval_dataset_1.csv:   File "C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_eval_dataset_1.py", line 1
-    this is not valid python!!!
-                      ^^^^^^
-SyntaxError: invalid s
-17:56:49 INFO     agentteam.nodes.retrieval_node: Repair needed — target: retrieval
-17:56:50 INFO     agentteam.utils.routing_utils: Routing decision: repair_agent — The script execution failed with a SyntaxError indicating invalid Python code, which is a script crash error marked with should_repair=True, so the repair_agent should attempt to fix the corrupted syntax.
-17:56:50 INFO     agentteam.storage.sqlite_store: Metadata schema initialised: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\agentteam.db
-17:56:50 INFO     agentteam.storage.sqlite_store: Loading SQLiteStore config...
-17:56:50 INFO     agentteam.storage.sqlite_store: SQLiteStore config loaded successfully
-17:56:50 INFO     agentteam.storage.sqlite_store: Run persisted: 3084561a-653a-43d7-9572-f45bedde3c0e — failed
-17:56:50 INFO     __main__: Experiment complete: repair_syntax_error_without_repair
+12:38:35 INFO     __main__: Running experiment: top_coffee_producing_countries_consistency_run1
+12:38:35 INFO     __main__: Workspace prepared — artifacts cleared, plugins preserved
+12:38:35 INFO     __main__: config repair enable : True
+12:38:35 INFO     __main__: Configuring failure: none
+12:38:35 INFO     __main__: Dataset copied to input: top_coffee_producing_countries.json
+12:38:36 INFO     agentteam.agents.orchestrator_agent: Loading orchestrator config...
+12:38:36 INFO     agentteam.agents.orchestrator_agent: Orchestrator config loaded successfully
+12:38:36 INFO     agentteam.agents.retrieval_agent: Loading retrieval agent config...
+12:38:36 INFO     agentteam.agents.retrieval_agent: Retrieval agent config loaded successfully
+12:38:36 INFO     agentteam.agents.validation_agent: Loading validation agent config...
+12:38:37 INFO     agentteam.agents.validation_agent: Validation agent config loaded successfully
+12:38:37 INFO     agentteam.utils.rule_executor: Registered operation: coerce_employee_age_to_int
+12:38:37 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_employee_age_to_int
+12:38:37 INFO     agentteam.utils.rule_executor: Registered operation: coerce_life_expectancy_to_float
+12:38:37 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_life_expectancy_to_float
+12:38:37 INFO     agentteam.utils.rule_executor: Registered operation: coerce_percentage_to_float
+12:38:37 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: coerce_percentage_to_float
+12:38:37 INFO     agentteam.utils.rule_executor: Registered operation: create_country_code_column
+12:38:37 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: create_country_code_column
+12:38:37 INFO     agentteam.utils.rule_executor: Registered operation: create_unique_employee_id
+12:38:37 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: create_unique_employee_id
+12:38:37 INFO     agentteam.utils.rule_executor: Registered operation: normalize_department_name
+12:38:37 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: normalize_department_name
+12:38:37 INFO     agentteam.utils.rule_executor: Registered operation: trim_string_columns
+12:38:37 INFO     agentteam.utils.plugin_registry: Plugin loaded and registered: trim_string_columns
+12:38:37 INFO     agentteam.utils.plugin_registry: Loaded 7 plugins: ['coerce_employee_age_to_int', 'coerce_life_expectancy_to_float', 'coerce_percentage_to_float', 'create_country_code_column', 'create_unique_employee_id', 'normalize_department_name', 'trim_string_columns']
+12:38:37 INFO     agentteam.agents.repair_agent: Loading repair agent config...
+12:38:37 INFO     agentteam.agents.repair_agent: Repair agent config loaded successfully
+12:38:37 INFO     agentteam.nodes.retrieval_node: Running retrieval agent...
+12:38:37 INFO     agentteam.nodes.retrieval_node: Detected JSON file: top_coffee_producing_countries.json
+12:38:37 INFO     agentteam.nodes.retrieval_node: Data source inferred for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\input\top_coffee_producing_countries.json
+12:38:37 INFO     agentteam.nodes.retrieval_node: Data sources for retrieval: ['C:\\Users\\Varsha\\OneDrive\\Documents\\Github\\AgentTeam\\workspace\\input\\top_coffee_producing_countries.json']
+12:38:37 INFO     agentteam.nodes.retrieval_node: Task for retrieval agent: full_pipeline and repair target: None
+12:38:42 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_top_coffee_producing_countries.py — Retrieves JSON file from input directory, analyzes its structure, and writes it to bronze directory.
+12:38:45 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Script executed successfully: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\retrieval_top_coffee_producing_countries.py
+12:38:46 INFO     agentteam.tools.retrieval_agent.retrieval_tools: Standardized top_coffee_producing_countries.json -> top_coffee_producing_countries.csv
+12:38:52 INFO     agentteam.utils.routing_utils: Routing decision: validation_agent — The data retrieval and standardization completed successfully with no errors, so the next logical step in the pipeline is to route to the validation_agent to validate the data quality and schema compliance.
+12:38:52 INFO     agentteam.nodes.validation_node: Cleared stale reports
+12:38:53 INFO     agentteam.tools.validation_agent.validator_tools: Loaded validation rules for top_coffee_producing_countries.csv: 3 schema rules, 2 transformations
+12:38:53 INFO     agentteam.tools.validation_agent.validator_tools: Read sample: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\top_coffee_producing_countries.csv — 20 rows, 3 cols
+12:38:58 INFO     agentteam.tools.validation_agent.validator_tools: Inferred columns for transformations: {'coerce_percentage_to_float': ['percentage_of_world_production'], 'trim_string_columns': ['country', 'major_regions']}
+12:38:58 INFO     agentteam.tools.validation_agent.validator_tools: operation='coerce_percentage_to_float' columns=['percentage_of_world_production'] selection='explicit' description='Convert percentage to float.' fill_value=None
+12:38:58 INFO     agentteam.tools.validation_agent.validator_tools: operation='trim_string_columns' columns=['country', 'major_regions'] selection='explicit' description='Remove leading and trailing whitespace from string columns.' fill_value=None
+12:38:58 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['coerce_percentage_to_float', 'trim_string_columns'], 'pending_operations': []}
+12:38:58 INFO     agentteam.tools.validation_agent.validator_tools: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['coerce_percentage_to_float', 'trim_string_columns'], 'pending_operations': []}
+12:39:01 INFO     agentteam.utils.execution_planner: Execution plan: {'total_steps': 2, 'built_in': 2, 'plugin': 0, 'needs_generation': 0, 'operations': ['coerce_percentage_to_float', 'trim_string_columns'], 'pending_operations': []}
+12:39:01 INFO     agentteam.utils.execution_planner: Executing: coerce_percentage_to_float (built_in) on columns: []
+12:39:01 INFO     agentteam.utils.execution_planner: Executing: trim_string_columns (built_in) on columns: []
+12:39:01 INFO     agentteam.tools.validation_agent.validator_tools: Transformation complete: 20 rows → C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\temp\transformed_top_coffee_producing_countries.csv
+12:39:03 INFO     agentteam.tools.validation_agent.validator_tools: Transformation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\transformation_report.json — Transformed 20 rows with percentage coercion and string trimming operations.
+12:39:10 INFO     agentteam.tools.validation_agent.validator_tools: Validation script written: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_top_coffee_producing_countries.csv.py — Validates transformed coffee data for null violations, type mismatches, and min/max range violations, writing valid rows to silver and quarantined rows to quarantine.
+12:39:14 INFO     agentteam.tools.validation_agent.validator_tools: Script executed: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\generated\validation_top_coffee_producing_countries.csv.py
+12:39:17 INFO     agentteam.tools.validation_agent.validator_tools: Validation report appended: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\logs\validation_report.json — FAIL for C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\staged_input\top_coffee_producing_countries.csv
+12:39:24 INFO     agentteam.nodes.validation_node: Validation complete — outcome: FAIL
+12:39:26 INFO     agentteam.utils.routing_utils: Routing decision: end — Validation failed with business rule violations (null values, out-of-range values) that should not be automatically repaired; routing to end for manual review.
+12:39:26 INFO     agentteam.storage.sqlite_store: Metadata schema initialised: C:\Users\Varsha\OneDrive\Documents\Github\AgentTeam\workspace\agentteam.db
+12:39:26 INFO     agentteam.storage.sqlite_store: Loading SQLiteStore config...
+12:39:26 INFO     agentteam.storage.sqlite_store: SQLiteStore config loaded successfully
+12:39:26 INFO     agentteam.storage.sqlite_store: Run persisted: a5f92845-bca6-4c60-9c48-762428f66010 — failed
+12:39:27 INFO     agentteam.storage.sqlite_store: Schema inferred for quarantine_top_coffee_producing_countries.csv: 3 columns
+12:39:27 INFO     agentteam.storage.sqlite_store: Quarantine persisted: quarantine_top_coffee_producing_countries.csv → quarantine_quarantine_top_coffee_producing_countries — 20 rows
+12:39:27 INFO     __main__: Experiment complete: top_coffee_producing_countries_consistency_run1

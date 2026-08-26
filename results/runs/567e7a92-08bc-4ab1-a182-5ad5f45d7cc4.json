@@ -1,0 +1,28 @@
+{
+  "run_id": "567e7a92-08bc-4ab1-a182-5ad5f45d7cc4",
+  "config": {
+    "experiment_name": "life_expectancy_by_country_consistency_run1",
+    "repair_enabled": true,
+    "plugin_cache_enabled": true,
+    "llm_rule_inference_enabled": true,
+    "failure_type": "none"
+  },
+  "ground_truth": {
+    "dataset_name": "life_expectancy_by_country",
+    "filename": "life_expectancy_by_country.json",
+    "dataset_category": "real_world",
+    "source_format": "json",
+    "total_rows": 0,
+    "injected_errors": [],
+    "expected_quarantine_rows": null
+  },
+  "detection_accuracy": null,
+  "repair_success": true,
+  "repair_attempts": 1,
+  "pipeline_success": true,
+  "execution_time_seconds": 117.07,
+  "llm_calls_made": 42,
+  "silver_row_count": 195,
+  "quarantine_row_count": 6,
+  "notes": ""
+}

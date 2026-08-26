@@ -2,11 +2,15 @@
 experiment_runner.py
 
 Runs the pipeline under controlled conditions and collects observations,
-split into three batches aligned with the thesis research questions:
+split into batches aligned with the thesis research questions and one
+supplementary consistency check:
 
-  - Detection batch  (RQ1): clean runs per dataset, no injected failures.
-  - Repair batch     (RQ2, RQ4): repair-enabled runs across failure types.
-  - Ablation batch    (RQ3): repair enabled vs. disabled, same failures.
+  - Detection batch    (RQ1): clean runs per dataset, no injected failures.
+  - Repair batch       (RQ2, RQ4): repair-enabled runs across failure types.
+  - Ablation batch     (RQ3): repair enabled vs. disabled, same failures.
+  - Consistency batch  (supplementary): real-world files run twice each,
+    no ground truth, no injected failure — measures run-to-run variance
+    in outcome rather than correctness against a known error set.
 
 Each batch writes to its own CSV with only the fields relevant to it.
 
@@ -100,6 +104,47 @@ logger = logging.getLogger(__name__)
 
 FAILURE_TYPES = ["syntax_error", "import_error", "runtime_type_error"]
 
+# Real-world files for the supplementary consistency batch.
+# Each is run twice, unmodified, with repair enabled and no injected failure.
+# total_rows is only used for reporting context in the CSV — it does not
+# feed into any accuracy calculation, since these datasets have no ground truth.
+REAL_WORLD_DATASETS = [
+    {"filename": "italy_earthquakes.csv", "source_format": "csv", "total_rows": 8046},
+    {"filename": "aw_fb_data.csv", "source_format": "csv", "total_rows": 6264},
+    {
+        "filename": "life_expectancy_by_country.json",
+        "source_format": "json",
+        "total_rows": None,
+    },
+    {
+        "filename": "top_coffee_producing_countries.json",
+        "source_format": "json",
+        "total_rows": None,
+    },
+]
+
+
+def load_real_world_ground_truths() -> list[GroundTruth]:
+    """
+    Builds GroundTruth entries for the real-world consistency batch.
+    No injected errors, no expected_quarantine_rows — these datasets are
+    used to measure run-to-run consistency, not detection accuracy.
+    """
+    ground_truths = []
+    for entry in REAL_WORLD_DATASETS:
+        ground_truths.append(
+            GroundTruth(
+                dataset_name=Path(entry["filename"]).stem,
+                filename=entry["filename"],
+                dataset_category="real_world",
+                source_format=entry["source_format"],
+                total_rows=entry["total_rows"] or 0,
+                injected_errors=[],
+                expected_quarantine_rows=None,
+            )
+        )
+    return ground_truths
+
 
 # -----------------------------
 # LLM call counter
@@ -160,6 +205,7 @@ def prepare_workspace(workspace_path: Path) -> None:
         if f.is_file() and f.suffix != ".db" and f.name != "execution.log":
             f.unlink()
 
+    clear_injection(workspace_path)
     logger.info("Workspace prepared — artifacts cleared, plugins preserved")
 
 
@@ -191,8 +237,10 @@ def _count_quarantine_rows(quarantine_dir: Path) -> int:
 
 
 def _compute_detection_accuracy(
-    quarantine_row_count: int, expected_quarantine_rows: int
-) -> float:
+    quarantine_row_count: int, expected_quarantine_rows: int | None
+) -> float | None:
+    if expected_quarantine_rows is None:
+        return None
     if expected_quarantine_rows == 0:
         return 1.0 if quarantine_row_count == 0 else 0.0
     return min(quarantine_row_count / expected_quarantine_rows, 1.0)
@@ -266,6 +314,31 @@ def append_ablation_result(result: ExperimentResult, csv_path: Path) -> None:
     )
 
 
+def append_consistency_result(
+    result: ExperimentResult, csv_path: Path, repeat_index: int
+) -> None:
+    """
+    Real-world consistency batch — same file run twice, no ground truth,
+    no injected failure. Reports outcome counts per repeat so run-to-run
+    variance can be computed afterward (repeat 1 vs. repeat 2 per dataset).
+    """
+    _append_row(
+        csv_path,
+        {
+            "run_id": result.run_id,
+            "dataset_name": result.ground_truth.dataset_name,
+            "source_format": result.ground_truth.source_format,
+            "repeat_index": repeat_index,
+            "silver_row_count": result.silver_row_count,
+            "quarantine_row_count": result.quarantine_row_count,
+            "pipeline_success": result.pipeline_success,
+            "execution_time_seconds": result.execution_time_seconds,
+            "llm_calls_made": result.llm_calls_made,
+            "notes": result.notes,
+        },
+    )
+
+
 def snapshot_result_json(result: ExperimentResult, runs_dir: Path) -> None:
     runs_dir.mkdir(parents=True, exist_ok=True)
     (runs_dir / f"{result.run_id}.json").write_text(
@@ -282,15 +355,17 @@ def snapshot_result_json(result: ExperimentResult, runs_dir: Path) -> None:
 class PlannedExperiment:
     index: int
     label: str
-    batch: str  # "detection" | "repair_ablation"
+    batch: str  # "detection" | "repair_ablation" | "consistency"
     ground_truth: GroundTruth
     config: ExperimentConfig
+    repeat_index: int | None = None
 
 
 def build_experiment_plan() -> list[PlannedExperiment]:
     """
     Builds the full, flat list of experiments to run, in order.
-    Detection batch first (RQ1), then repair/ablation batch (RQ2, RQ3, RQ4).
+    Detection batch first (RQ1), then repair/ablation batch (RQ2, RQ3, RQ4),
+    then the supplementary real-world consistency batch.
     """
     ground_truths = generate_all()
     plan: list[PlannedExperiment] = []
@@ -332,6 +407,28 @@ def build_experiment_plan() -> list[PlannedExperiment]:
                     batch="repair_ablation",
                     ground_truth=target_gt,
                     config=config,
+                )
+            )
+            idx += 1
+
+    # Batch C — supplementary real-world consistency check
+    real_world_gts = load_real_world_ground_truths()
+    for gt in real_world_gts:
+        for repeat_index in [1, 2]:
+            config = ExperimentConfig(
+                experiment_name=f"{gt.dataset_name}_consistency_run{repeat_index}",
+                repair_enabled=True,
+                failure_type="none",
+            )
+            plan.append(
+                PlannedExperiment(
+                    index=idx,
+                    label=f"[consistency] {gt.dataset_name} ({gt.source_format}) "
+                    f"— repeat {repeat_index}/2",
+                    batch="consistency",
+                    ground_truth=gt,
+                    config=config,
+                    repeat_index=repeat_index,
                 )
             )
             idx += 1
@@ -391,11 +488,15 @@ def run_experiment(
         if failure_type != "none":
             set_injection(workspace_path, ground_truth.filename, config.failure_type)
 
+        if ground_truth.dataset_category == "real_world":
+            dataset_subdir = "real_world"
+        elif ground_truth.dataset_name == "clean":
+            dataset_subdir = "clean"
+        else:
+            dataset_subdir = "broken"
+
         source = (
-            Path(__file__).parent
-            / "datasets"
-            / ("clean" if ground_truth.dataset_name == "clean" else "broken")
-            / ground_truth.filename
+            Path(__file__).parent / "datasets" / dataset_subdir / ground_truth.filename
         )
         dest = workspace_path / "input" / ground_truth.filename
         if not source.exists():
@@ -511,7 +612,7 @@ def run_experiment(
         print(
             f"    → silver: {silver_row_count}, quarantine: {quarantine_row_count}, "
             f"repair attempts: {repair_attempts}, repair success: {repair_success}, "
-            f"detection accuracy: {detection_accuracy:.2f}\n"
+            f"detection accuracy: {detection_accuracy}\n"
             f"    → time: {execution_time}s, llm calls: {counter.total_calls}, "
             f"input tokens: {counter.total_input_tokens}, "
             f"output tokens: {counter.total_output_tokens}"
@@ -553,6 +654,10 @@ def _dispatch_result(
         if exp.config.repair_enabled:
             append_repair_result(result, results_dir / "results_repair.csv")
         append_ablation_result(result, results_dir / "results_ablation.csv")
+    elif exp.batch == "consistency":
+        append_consistency_result(
+            result, results_dir / "results_consistency.csv", exp.repeat_index
+        )
 
 
 # -----------------------------

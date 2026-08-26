@@ -1,0 +1,9 @@
+run_id,dataset_name,source_format,repeat_index,silver_row_count,quarantine_row_count,pipeline_success,execution_time_seconds,llm_calls_made,notes
+4b814c94-54b4-498b-9a92-427a9f6b512f,italy_earthquakes,csv,1,8080,6,True,47.59,20,
+e488b55c-2a1f-41d7-9733-489e7b1f8917,italy_earthquakes,csv,2,8080,6,True,47.88,19,
+5e7c796a-1fd9-492a-bfbf-bdb31cf50c4c,aw_fb_data,csv,1,6182,82,True,59.9,20,
+9badd75f-fce9-47a3-b2cf-7f08bd1a022b,aw_fb_data,csv,2,6182,82,True,57.17,19,
+567e7a92-08bc-4ab1-a182-5ad5f45d7cc4,life_expectancy_by_country,json,1,195,6,True,117.07,42,
+8693cfb6-0858-40ac-963d-a3ab5789de11,life_expectancy_by_country,json,2,195,6,True,47.11,20,
+2a6ce17e-17ec-41cd-8d04-db8d2a372b75,top_coffee_producing_countries,json,1,20,0,True,49.77,20,
+0c837317-a273-497e-879c-98556452b54a,top_coffee_producing_countries,json,2,20,0,True,50.06,19,

@@ -1,0 +1,28 @@
+{
+  "run_id": "0c837317-a273-497e-879c-98556452b54a",
+  "config": {
+    "experiment_name": "top_coffee_producing_countries_consistency_run2",
+    "repair_enabled": true,
+    "plugin_cache_enabled": true,
+    "llm_rule_inference_enabled": true,
+    "failure_type": "none"
+  },
+  "ground_truth": {
+    "dataset_name": "top_coffee_producing_countries",
+    "filename": "top_coffee_producing_countries.json",
+    "dataset_category": "real_world",
+    "source_format": "json",
+    "total_rows": 0,
+    "injected_errors": [],
+    "expected_quarantine_rows": null
+  },
+  "detection_accuracy": null,
+  "repair_success": false,
+  "repair_attempts": 0,
+  "pipeline_success": false,
+  "execution_time_seconds": 50.06,
+  "llm_calls_made": 19,
+  "silver_row_count": 0,
+  "quarantine_row_count": 20,
+  "notes": ""
+}

@@ -1,0 +1,28 @@
+{
+  "run_id": "d99e14ab-f20d-4511-bedb-9f1adcf02f14",
+  "config": {
+    "experiment_name": "italy_earthquakes_consistency_run1",
+    "repair_enabled": true,
+    "plugin_cache_enabled": true,
+    "llm_rule_inference_enabled": true,
+    "failure_type": "none"
+  },
+  "ground_truth": {
+    "dataset_name": "italy_earthquakes",
+    "filename": "italy_earthquakes.csv",
+    "dataset_category": "real_world",
+    "source_format": "csv",
+    "total_rows": 8046,
+    "injected_errors": [],
+    "expected_quarantine_rows": null
+  },
+  "detection_accuracy": 0.0,
+  "repair_success": false,
+  "repair_attempts": 0,
+  "pipeline_success": false,
+  "execution_time_seconds": 0.0,
+  "llm_calls_made": 0,
+  "silver_row_count": 0,
+  "quarantine_row_count": 0,
+  "notes": "near \"/\": syntax error"
+}

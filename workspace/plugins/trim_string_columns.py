@@ -3,7 +3,7 @@ from agentteam.models.structured_outputs import TransformationRule
 
 def trim_string_columns(df: pd.DataFrame, rule: TransformationRule) -> pd.DataFrame:
     df = df.copy()
-    string_cols = df.select_dtypes(include=['object']).columns
-    for col in string_cols:
-        df[col] = df[col].str.strip()
+    for col in df.columns:
+        if df[col].dtype == 'object' or df[col].dtype == 'string':
+            df[col] = df[col].apply(lambda x: x.strip() if isinstance(x, str) else x)
     return df

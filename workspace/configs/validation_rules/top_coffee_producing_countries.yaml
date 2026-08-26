@@ -1,0 +1,23 @@
+schema:
+  country:
+    type: str
+    nullable: false
+
+  major_regions:
+    type: str
+    nullable: false
+
+  percentage_of_world_production:
+    type: float
+    nullable: false
+    min: 0
+    max: 100
+
+transformations:
+  - operation: coerce_percentage_to_float
+    selection: infer
+    description: Convert percentage to float.
+
+  - operation: trim_string_columns
+    selection: infer
+    description: Remove leading and trailing whitespace from string columns.

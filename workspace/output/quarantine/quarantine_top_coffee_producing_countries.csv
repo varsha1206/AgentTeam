@@ -1,0 +1,21 @@
+country,major_regions,percentage_of_world_production,quarantine_reason
+,,37.4,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value; Column 'percentage_of_world_production' is non-nullable but has null value
+,,6.5,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,5.5,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,4.7,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,3.9,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,133.3,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value; Column 'percentage_of_world_production' value 133.3 exceeds maximum 100.0
+,,,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value; Column 'percentage_of_world_production' is non-nullable but has null value
+,,2.4,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,2.3,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,1.9,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,1.5,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,1.0,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,0.8,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,0.8,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,0.8,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,0.8,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,0.5,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
+,,-0.5,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value; Column 'percentage_of_world_production' value -0.5 is below minimum 0.0
+,,0.4,Column 'country' is non-nullable but has null value; Column 'major_regions' is non-nullable but has null value
